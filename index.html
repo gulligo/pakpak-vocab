@@ -638,7 +638,9 @@ dialog::backdrop { background: transparent; }
 
   /* ================= 탭 ================= */
   var tab = 'mn';
+  var tabScroll = { mn: null, pak: 0 };
   function setTab(t) {
+    if (tab !== t) tabScroll[tab] = window.scrollY;
     tab = t;
     document.querySelectorAll('.tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === t); });
     $('v-mn').hidden = t !== 'mn';
@@ -647,8 +649,9 @@ dialog::backdrop { background: transparent; }
     $('h-mn').hidden = t !== 'mn' || searching;
     $('h-ms').hidden = t !== 'mn' || !searching;
     $('h-pl').hidden = t !== 'mn' || searching;
-    if (t === 'mn') pendingJump = true;
-    window.scrollTo(0, 0);
+    var y = tabScroll[t];
+    if (t === 'mn' && y == null) pendingJump = true;
+    window.scrollTo(0, y || 0);
   }
   document.querySelectorAll('.tabs button').forEach(function (b) {
     b.addEventListener('click', function () { setTab(b.dataset.tab); if (b.dataset.tab === 'mn') renderMn(); });
