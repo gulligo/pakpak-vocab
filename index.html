@@ -81,6 +81,7 @@ select {
   display: flex; align-items: center; justify-content: center;
 }
 .ic svg { width: 20px; height: 20px; }
+.ic[hidden] { display: none; }
 main { padding: 6px 12px 110px; }
 section[hidden] { display: none; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; align-items: start; }
@@ -242,6 +243,8 @@ dialog::backdrop { background: transparent; }
 .phd:first-child { margin-top: 4px; }
 .phd b { font-size: 18px; }
 .phd button { border: none; border-radius: 16px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; background: var(--accent); color: var(--surface); font-weight: 600; }
+.phd .pbt { display: flex; gap: 6px; }
+.phd button.rv { background: var(--danger); }
 .phd button.done { background: var(--accent-bg); color: var(--accent); font-weight: 400; }
 .tgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .tile {
@@ -300,6 +303,7 @@ dialog::backdrop { background: transparent; }
   <div class="hrow" id="h-mn">
     <button class="vol" id="volbtn" type="button">1권</button>
     <div class="pills" id="pills"></div>
+    <button class="ic" id="rbtn" type="button" aria-label="내 기록 리셋" hidden style="font-size:20px">&#8634;</button>
     <button class="ic" id="sbtn" type="button" aria-label="단어 찾기">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6"/></svg>
     </button>
@@ -506,6 +510,8 @@ dialog::backdrop { background: transparent; }
     clearTimeout(e._t); e._t = setTimeout(function () { e.style.display = 'none'; }, 2200);
   }
   function int(v, d) { var n = parseInt(v, 10); return n >= 1 ? n : d; }
+  var DEVICE = localStorage.getItem('jg-dev');
+  if (!DEVICE) { DEVICE = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('jg-dev', DEVICE); }
 
   /* ================= 서버 저장 (R2) ================= */
   function makeStore(name) {
@@ -709,12 +715,8 @@ dialog::backdrop { background: transparent; }
       if (volOf(x) !== v || x.part !== p) return;
       var r = srsOf(x.id); if (!r) nw++; else if (r.due <= t) due++;
     });
-    var n = due + Math.min(nw, NEW_PER_RUN);
-    if (!n) return '<button class="done" type="button">오늘 끝</button>';
-    var parts = [];
-    if (due) parts.push('복습 ' + due);
-    if (nw) parts.push('새 ' + Math.min(nw, NEW_PER_RUN));
-    return '<button class="go" data-study="' + p + '" type="button">외우기 · ' + parts.join(' · ') + '</button>';
+    return '<span class="pbt">' + (due ? '<button class="go rv" data-study="' + p + '" data-m="due" type="button">복습 ' + due + '</button>' : '') +
+      '<button class="go" data-study="' + p + '" data-m="all" type="button">클카</button></span>';
   }
   function renderMn() {
     renderPills();
@@ -782,7 +784,29 @@ dialog::backdrop { background: transparent; }
   $('sclose').addEventListener('click', function () {
     searching = false; $('h-ms').hidden = true; $('h-mn').hidden = false; pendingJump = true; renderMn();
   });
-  $('mq').addEventListener('input', renderMn);
+  $('mq').addEventListener('input', function () {
+    if ($('mq').value.trim() === '9981') {
+      var on = localStorage.getItem('jg-owner') !== '1';
+      localStorage.setItem('jg-owner', on ? '1' : '0');
+      $('mq').value = '';
+      $('rbtn').hidden = !on;
+      toast(on ? '이 폰에 리셋 버튼(↺)을 켰습니다' : '이 폰의 리셋 버튼을 껐습니다');
+    }
+    renderMn();
+  });
+  $('rbtn').hidden = localStorage.getItem('jg-owner') !== '1';
+  $('rbtn').addEventListener('click', async function () {
+    var mine = words().filter(function (x) { return x.memoBy === DEVICE && String(x.memo || '').trim(); });
+    var msg = '이 폰에서 한 것만 지웁니다.\n\n· 외우기 기록\n· 찾아봄 표시\n· 이 폰에서 쓴 메모 ' + mine.length + '개\n\n페이지·단어·mp3와 아이가 쓴 메모는 그대로입니다. 리셋할까요?';
+    if (!confirm(msg)) return;
+    SRS = {}; lsSet('jg-srs', SRS);
+    SEEN = {}; lsSet('jg-seen', SEEN);
+    if (mine.length) {
+      await MN.putMany(mine.map(function (x) { var n = Object.assign({}, x, { memo: '' }); delete n.memoBy; return n; }));
+    }
+    renderMn();
+    toast('리셋했습니다');
+  });
 
   // 짧게 누르면 카드, 길게 누르면 메모
   (function () {
@@ -800,7 +824,7 @@ dialog::backdrop { background: transparent; }
     list.addEventListener('contextmenu', function (e) { if (e.target.closest('.tile')) e.preventDefault(); });
     list.addEventListener('click', function (e) {
       var s = e.target.closest('[data-study]');
-      if (s) { openStudy(Number(s.dataset.study)); return; }
+      if (s) { openStudy(Number(s.dataset.study), s.dataset.m); return; }
       var t = e.target.closest('.tile'); if (!t) return;
       if (longDone) { longDone = false; return; }
       if (searching) { SEEN[t.dataset.id] = (SEEN[t.dataset.id] || 0) + 1; lsSet('jg-seen', SEEN); setTimeout(renderMn, 300); }
@@ -825,7 +849,11 @@ dialog::backdrop { background: transparent; }
     var w = MN.get(MM.id), v = $('mm-text').value.replace(/\s+$/, '');
     $('mmdlg').close();
     var id = MM.id; MM = null;
-    if (w && v !== (w.memo || '')) await MN.put(Object.assign({}, w, { memo: v }));
+    if (w && v !== (w.memo || '')) {
+      var nw = Object.assign({}, w, { memo: v });
+      if (v.trim()) nw.memoBy = DEVICE; else delete nw.memoBy;
+      await MN.put(nw);
+    }
     return id;
   }
   $('mm-save').addEventListener('click', saveMemo);
@@ -960,13 +988,12 @@ dialog::backdrop { background: transparent; }
     V = { type: 'card', mode: 'browse', ids: ids, i: Math.max(0, ids.indexOf(id)), again: {} };
     $('vdlg').showModal(); renderViewer();
   }
-  function openStudy(part) {
+  function openStudy(part, m) {
     var t = today(), list = bookSort(words().filter(function (x) { return volOf(x) === vol && x.part === part; }));
-    var due = list.filter(function (x) { var r = srsOf(x.id); return r && r.due <= t; });
-    var nw = list.filter(function (x) { return !srsOf(x.id); }).slice(0, NEW_PER_RUN);
-    var ids = due.concat(nw).map(function (x) { return x.id; });
+    if (m === 'due') list = list.filter(function (x) { var r = srsOf(x.id); return r && r.due <= t; });
+    var ids = list.map(function (x) { return x.id; });
     if (!ids.length) return;
-    V = { type: 'card', mode: 'study', label: vol + '권 ' + part + '강', ids: ids, i: 0, again: {}, total: ids.length };
+    V = { type: 'card', mode: 'study', label: vol + '권 ' + part + '강 ' + (m === 'due' ? '복습' : '클카'), ids: ids, i: 0, again: {}, total: ids.length };
     $('vdlg').showModal(); renderViewer();
   }
   function mnHtml(s) { return esc(s).replace(/\*([^*\n]+)\*/g, '<b>$1</b>'); }
@@ -985,7 +1012,7 @@ dialog::backdrop { background: transparent; }
     V.ids = V.ids.filter(function (id) { return MN.get(id); });
     var stage = $('vstage');
     if (V.type === 'card' && V.mode === 'study' && V.i >= V.ids.length) {
-      $('v-title').textContent = V.label + ' 외우기';
+      $('v-title').textContent = V.label;
       $('v-prev').hidden = $('v-next').hidden = $('v-edit').hidden = true;
       stage.innerHTML = '<div class="vdone"><div class="big">끝!</div><div>' + V.total + '단어를 봤습니다.</div><br><button class="mstart" id="v-close2">돌아가기</button></div>';
       $('v-close2').onclick = closeViewer;
@@ -1001,7 +1028,7 @@ dialog::backdrop { background: transparent; }
       stage.innerHTML = '<div class="vcard' + anim + '" id="vcard"><img class="vpage" alt="" src="' + esc(photoUrl(x)) + '">' +
         '<div class="vhint">아래로 내리면 다음 쪽 · 위로 올리면 이전 쪽</div></div>';
     } else {
-      $('v-title').textContent = (V.mode === 'study' ? V.label + ' 외우기' : label(x)) + ' · ' + (V.i + 1) + ' / ' + V.ids.length;
+      $('v-title').textContent = (V.mode === 'study' ? V.label : label(x)) + ' · ' + (V.i + 1) + ' / ' + V.ids.length;
       var r = srsOf(x.id), d = [0, 1, 2].map(function (k) { return LEVELS[nextLevel(r, k)]; });
       if (V.mode === 'study' && !V.flip && x.title) {
         stage.innerHTML = '<div class="vcard' + anim + '" id="vcard"><div class="vfront" id="v-front">' +
