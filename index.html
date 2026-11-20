@@ -210,6 +210,54 @@ dialog::backdrop { background: transparent; }
 /* 사진 펴기 */
 .cbody { flex: 1; overflow-y: auto; padding: 0 16px 20px; }
 #cv { display: block; margin: 6px auto; touch-action: none; border-radius: 6px; }
+
+/* 권 · 보기 · 플레이어 */
+.vol { flex: none; border: 1px solid var(--accent); background: var(--accent); color: var(--surface); border-radius: 18px; padding: 8px 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.seg { display: flex; background: var(--field); border: 1px solid var(--border); border-radius: 20px; padding: 3px; margin: 0 0 10px; }
+.seg button { flex: 1; border: none; background: transparent; color: var(--muted); font: inherit; font-size: 14px; padding: 7px 0; border-radius: 17px; cursor: pointer; }
+.seg button.on { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+.player { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+.player[hidden] { display: none; }
+.pbtn { flex: none; width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--accent); color: var(--surface); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pbtn.sm { width: 38px; height: 38px; background: var(--accent-bg); color: var(--accent); font-size: 14px; }
+.pmid { flex: 1; min-width: 0; }
+.ptitle { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptitle small { font-weight: 400; color: var(--muted); }
+.pmid input[type=range] { width: 100%; margin: 4px 0 0; accent-color: var(--accent); }
+.ptime { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.pnone { font-size: 13px; color: var(--muted); text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 12px; margin-bottom: 10px; }
+.pgrow { display: block; width: 100%; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 0; margin-bottom: 10px; overflow: hidden; cursor: pointer; font: inherit; color: var(--text); text-align: left; }
+.pgrow img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: top; background: var(--bg); }
+.pgrow .cap { padding: 8px 12px; font-size: 13px; color: var(--muted); }
+.vpage { display: block; width: 100%; max-height: calc(100dvh - 150px); object-fit: contain; border-radius: 8px; background: var(--bg); }
+.vword-img { display: block; width: 100%; max-height: 58vh; object-fit: contain; border-radius: 10px; background: var(--bg); margin-bottom: 10px; }
+
+/* + 메뉴 */
+.sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; display: flex; align-items: flex-end; }
+.sheet-bg[hidden] { display: none; }
+.sheet { width: 100%; background: var(--surface); border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+.sheet h3 { margin: 0 0 12px; font-size: 17px; }
+.sheet .two { display: flex; gap: 10px; margin-bottom: 14px; }
+.sheet .two > div { flex: 1; }
+.sheet label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.sheet input { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--field); color: var(--text); font: inherit; font-size: 18px; padding: 10px 12px; }
+.sheet .big { display: block; width: 100%; border: none; border-radius: 12px; padding: 15px; font: inherit; font-size: 16px; font-weight: 600; margin-top: 8px; cursor: pointer; text-align: left; }
+.sheet .big.a { background: var(--accent); color: var(--surface); }
+.sheet .big.b { background: var(--accent-bg); color: var(--accent); }
+.sheet .big.c { background: transparent; color: var(--muted); text-align: center; font-weight: 400; }
+
+/* 칸 나누기 · 이름 적기 */
+#scv { display: block; margin: 6px auto; touch-action: none; border-radius: 6px; }
+.nlist { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.nrow { display: flex; gap: 10px; align-items: center; }
+.nrow img { width: 42%; flex: none; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); }
+.nrow .nf { flex: 1; min-width: 0; }
+.nrow .nf span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.nrow input { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--field); color: var(--text); font: inherit; font-size: 17px; padding: 10px; }
+.three { display: flex; gap: 8px; }
+.three > div { flex: 1; min-width: 0; }
+.three label { display: block; font-size: 12px; color: var(--muted); margin: 4px 0; }
+.three input { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--field); color: var(--text); font: inherit; font-size: 17px; padding: 9px 10px; }
 </style>
 </head>
 <body>
@@ -219,13 +267,14 @@ dialog::backdrop { background: transparent; }
     <button type="button" data-tab="pak">팍팍</button>
   </div>
   <div class="hrow" id="h-mn">
+    <button class="vol" id="volbtn" type="button">1권</button>
     <div class="pills" id="pills"></div>
     <button class="ic" id="sbtn" type="button" aria-label="단어 찾기">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6"/></svg>
     </button>
   </div>
   <div class="hrow" id="h-ms" hidden>
-    <input id="mq" class="search" type="search" placeholder="단어나 뜻 찾기" autocomplete="off" autocapitalize="none">
+    <input id="mq" class="search" type="search" placeholder="단어 찾기 (1·2권 전체)" autocomplete="off" autocapitalize="none">
     <button class="ic" id="sclose" type="button" aria-label="찾기 닫기" style="font-size:18px">&#10005;</button>
   </div>
   <div class="hrow" id="h-pak" hidden>
@@ -240,8 +289,22 @@ dialog::backdrop { background: transparent; }
 </header>
 <main>
   <section id="v-mn">
+    <div class="player" id="player" hidden>
+      <button class="pbtn" id="pl-btn" type="button" aria-label="재생">&#9654;</button>
+      <div class="pmid">
+        <div class="ptitle" id="pl-title"></div>
+        <input type="range" id="pl-seek" min="0" max="1000" value="0" step="1" aria-label="재생 위치">
+        <div class="ptime"><span id="pl-cur">0:00</span><span id="pl-dur">0:00</span></div>
+      </div>
+      <button class="pbtn sm" id="pl-next" type="button" aria-label="다음 강">&#9197;</button>
+    </div>
+    <div class="pnone" id="pnone" hidden></div>
+    <div class="seg" id="mseg">
+      <button type="button" data-m="book">책 보기</button>
+      <button type="button" data-m="card">카드 보기</button>
+    </div>
     <div id="mn-start"></div>
-    <div class="mlist" id="mn-list"></div>
+    <div id="mn-list"></div>
     <div class="empty" id="mn-empty" hidden></div>
   </section>
   <section id="v-pak" hidden>
@@ -249,8 +312,23 @@ dialog::backdrop { background: transparent; }
     <div class="empty" id="empty" hidden></div>
   </section>
 </main>
-<button class="fab" id="add" aria-label="새 단어">+</button>
+<button class="fab" id="add" aria-label="추가">+</button>
 <div class="toast" id="toast"></div>
+<audio id="au" preload="none"></audio>
+
+<!-- + 메뉴 -->
+<div class="sheet-bg" id="sheet" hidden>
+  <div class="sheet">
+    <h3>연상단어 추가</h3>
+    <div class="two">
+      <div><label>권</label><input id="s-vol" type="number" inputmode="numeric" min="1" max="2"></div>
+      <div><label>강</label><input id="s-part" type="number" inputmode="numeric" min="1"></div>
+    </div>
+    <button class="big a" id="s-page" type="button">📄 페이지 사진으로 단어 추가</button>
+    <button class="big b" id="s-mp3" type="button">🎵 이 강 mp3 올리기 / 바꾸기</button>
+    <button class="big c" id="s-close" type="button">닫기</button>
+  </div>
+</div>
 
 <!-- 팍팍 편집 (처음 그대로) -->
 <dialog id="dlg">
@@ -266,47 +344,35 @@ dialog::backdrop { background: transparent; }
   </div>
 </dialog>
 
-<!-- 연상 카드 -->
+<!-- 페이지 · 카드 보기 -->
 <dialog id="vdlg">
   <div class="bar">
     <button class="icon" id="v-back" type="button" aria-label="닫기">&#8592;</button>
     <span class="tt" id="v-title"></span>
     <span class="sp"></span>
-    <button class="icon sm" id="v-prev" type="button" aria-label="이전 단어">&#9650;</button>
-    <button class="icon sm" id="v-next" type="button" aria-label="다음 단어">&#9660;</button>
+    <button class="icon sm" id="v-prev" type="button" aria-label="이전">&#9650;</button>
+    <button class="icon sm" id="v-next" type="button" aria-label="다음">&#9660;</button>
     <button class="icon sm" id="v-edit" type="button" aria-label="고치기">&#9998;</button>
   </div>
   <div id="vstage"></div>
 </dialog>
 
-<!-- 연상단어 입력 -->
+<!-- 단어 고치기 -->
 <dialog id="edlg">
   <div class="bar">
-    <button class="icon" id="e-back" type="button" aria-label="저장하고 닫기">&#8592;</button>
-    <span class="tt" id="e-title">연상단어</span>
+    <button class="icon" id="e-back" type="button" aria-label="닫기">&#8592;</button>
+    <span class="tt">단어 고치기</span>
     <span class="sp"></span>
     <button class="icon danger" id="e-del" type="button">삭제</button>
     <button class="btn pri" id="e-save" type="button">저장</button>
   </div>
   <div class="err" id="e-err"></div>
   <div class="mf">
-    <button class="photo-slot" id="e-photo" type="button"></button>
-    <div class="photo-tools" id="e-ptools"></div>
+    <img class="vword-img" id="e-img" alt="" hidden>
     <label>단어</label>
-    <input id="f-word" autocomplete="off" autocapitalize="none" placeholder="burden">
-    <label>발음기호</label>
-    <input id="f-pron" autocomplete="off" autocapitalize="none" placeholder="[bə́ːrdn]">
-    <label>뜻</label>
-    <textarea id="f-mean" placeholder="n. 무거운 짐, 부담&#10;v. ~에게 짐을 지우다"></textarea>
-    <label>연상 문장 (별표로 감싸면 파란색: *붜서 든*)</label>
-    <textarea id="f-mn" placeholder="항아리에 물을 *붜서 든* 무거운 짐, 부담"></textarea>
-    <div class="two">
-      <div><label>강</label><input id="f-part" type="number" inputmode="numeric" min="1" placeholder="19"></div>
-      <div><label>책 순서</label><input id="f-ord" type="number" inputmode="numeric" min="1" placeholder="자동"></div>
-    </div>
-    <label>헷갈리는 단어</label>
-    <input id="f-cf" autocomplete="off" autocapitalize="none" placeholder="conscience">
-    <div class="note">책 순서를 비워 두면 그 강의 맨 뒤에 들어갑니다.</div>
+    <input id="f-word" autocomplete="off" autocapitalize="none">
+    <label>발음기호 (선택)</label>
+    <input id="f-pron" autocomplete="off" autocapitalize="none" placeholder="[kɔːr]">
   </div>
 </dialog>
 
@@ -314,12 +380,12 @@ dialog::backdrop { background: transparent; }
 <dialog id="cdlg">
   <div class="bar">
     <button class="icon" id="c-back" type="button" aria-label="취소">&#8592;</button>
-    <span class="tt">사진 펴기</span>
+    <span class="tt">1. 페이지 펴기</span>
     <span class="sp"></span>
-    <button class="btn pri" id="c-ok" type="button">완료</button>
+    <button class="btn pri" id="c-ok" type="button">다음</button>
   </div>
   <div class="cbody">
-    <div class="note" style="margin:0 0 6px;line-height:1.5">네 개의 점을 그림 칸의 모서리에 맞추세요. 점을 끄는 동안 위쪽에 확대 화면이 나옵니다.</div>
+    <div class="note" style="margin:0 0 6px;line-height:1.5">네 개의 점을 단어 칸들이 있는 영역의 네 모서리에 맞추세요. 점을 끄는 동안 위쪽에 확대 화면이 나옵니다.</div>
     <canvas id="cv"></canvas>
     <div class="photo-tools">
       <button class="btn" id="c-full" type="button">사진 전체로</button>
@@ -328,7 +394,47 @@ dialog::backdrop { background: transparent; }
   </div>
 </dialog>
 
+<!-- 칸 나누기 -->
+<dialog id="sdlg">
+  <div class="bar">
+    <button class="icon" id="sp-back" type="button" aria-label="뒤로">&#8592;</button>
+    <span class="tt">2. 칸 나누기</span>
+    <span class="sp"></span>
+    <button class="btn pri" id="sp-ok" type="button">다음</button>
+  </div>
+  <div class="cbody">
+    <div class="seg" id="sp-n">
+      <button type="button" data-n="6">6단어 (2×3)</button>
+      <button type="button" data-n="4">4단어 (2×2)</button>
+    </div>
+    <div class="note" style="margin:0 0 6px">빨간 선을 끌어서 칸 경계에 맞추세요.</div>
+    <canvas id="scv"></canvas>
+  </div>
+</dialog>
+
+<!-- 단어 이름 적기 / 페이지 고치기 -->
+<dialog id="ndlg">
+  <div class="bar">
+    <button class="icon" id="n-back" type="button" aria-label="뒤로">&#8592;</button>
+    <span class="tt" id="n-title">3. 단어 이름 적기</span>
+    <span class="sp"></span>
+    <button class="icon danger" id="n-del" type="button">페이지 삭제</button>
+    <button class="btn pri" id="n-save" type="button">저장</button>
+  </div>
+  <div class="err" id="n-err"></div>
+  <div class="mf">
+    <div class="three">
+      <div><label>권</label><input id="n-vol" type="number" inputmode="numeric" min="1" max="2"></div>
+      <div><label>강</label><input id="n-part" type="number" inputmode="numeric" min="1"></div>
+      <div><label>쪽 (강 안에서)</label><input id="n-pno" type="number" inputmode="numeric" min="1"></div>
+    </div>
+    <div class="nlist" id="n-list"></div>
+    <div class="note" style="margin-top:12px">이름을 비워 둔 칸은 카드로 만들지 않습니다.</div>
+  </div>
+</dialog>
+
 <input type="file" id="pfile" accept="image/*" hidden>
+<input type="file" id="afile" accept="audio/*,.mp3" hidden>
 
 <script>
 (function () {
@@ -350,8 +456,9 @@ dialog::backdrop { background: transparent; }
   function today() { var d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000); }
   function toast(t) {
     var e = $('toast'); e.textContent = t; e.style.display = 'block';
-    clearTimeout(e._t); e._t = setTimeout(function () { e.style.display = 'none'; }, 2000);
+    clearTimeout(e._t); e._t = setTimeout(function () { e.style.display = 'none'; }, 2200);
   }
+  function int(v, d) { var n = parseInt(v, 10); return n >= 1 ? n : d; }
 
   /* ================= 서버 저장 (R2) ================= */
   function makeStore(name) {
@@ -396,6 +503,18 @@ dialog::backdrop { background: transparent; }
       if (S.onchange) S.onchange();
       try { await S.flush(); } catch (e) { toast('인터넷이 연결되면 자동으로 저장됩니다'); }
     };
+    S.putMany = async function (list) {
+      var now = Date.now();
+      list.forEach(function (it, k) {
+        it.updated = now + k;
+        var i = S.items.findIndex(function (x) { return x.id === it.id; });
+        if (i >= 0) S.items[i] = it; else S.items.push(it);
+        S.pending[it.id] = it;
+      });
+      S.saveLocal();
+      if (S.onchange) S.onchange();
+      try { await S.flush(); } catch (e) { toast('인터넷이 연결되면 자동으로 저장됩니다'); }
+    };
     return S;
   }
   var MN = makeStore('mn');
@@ -425,7 +544,22 @@ dialog::backdrop { background: transparent; }
     syncing = false;
   }
 
-  function photoUrl(it) { return API + '/photo/' + it.id + '?v=' + (it.pv || 0); }
+  function fileUrl(id, v) { return API + '/photo/' + id + '?v=' + (v || 0); }
+  function photoUrl(it) { return fileUrl(it.id, it.pv); }
+  async function upload(id, blob, type) {
+    var r = await fetch(API + '/photo/' + id, { method: 'PUT', headers: Object.assign({ 'Content-Type': type }, H), body: blob });
+    if (!r.ok) throw new Error('upload');
+  }
+  function toBlob(canvas, maxSide) {
+    var c = canvas;
+    if (maxSide && Math.max(c.width, c.height) > maxSide) {
+      var k = maxSide / Math.max(c.width, c.height), d = document.createElement('canvas');
+      d.width = Math.round(c.width * k); d.height = Math.round(c.height * k);
+      d.getContext('2d').drawImage(c, 0, 0, d.width, d.height);
+      c = d;
+    }
+    return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.85); });
+  }
 
   /* ================= 탭 ================= */
   var tab = 'mn';
@@ -442,7 +576,42 @@ dialog::backdrop { background: transparent; }
   document.querySelectorAll('.tabs button').forEach(function (b) {
     b.addEventListener('click', function () { setTab(b.dataset.tab); });
   });
-  $('add').addEventListener('click', function () { if (tab === 'mn') openMnEditor(null); else openEditor(null); });
+  $('add').addEventListener('click', function () { if (tab === 'mn') openSheet(); else openEditor(null); });
+
+  /* ================= 연상단어 데이터 ================= */
+  function kindOf(x) { return x.kind || 'word'; }
+  function volOf(x) { return x.vol || 1; }
+  function words() { return MN.list().filter(function (x) { return kindOf(x) === 'word' && String(x.title || '').trim(); }); }
+  function pages() { return MN.list().filter(function (x) { return kindOf(x) === 'page'; }); }
+  function audios() {
+    return MN.list().filter(function (x) { return kindOf(x) === 'audio'; })
+      .sort(function (a, b) { return (volOf(a) - volOf(b)) || ((a.part || 0) - (b.part || 0)); });
+  }
+  function bookSort(list) {
+    return list.slice().sort(function (a, b) {
+      return (volOf(a) - volOf(b)) || ((a.part || 0) - (b.part || 0)) ||
+             ((a.pno || 0) - (b.pno || 0)) || ((a.ord || 0) - (b.ord || 0)) || ((a.created || 0) - (b.created || 0));
+    });
+  }
+  function audioOf(v, p) { return MN.get('a-' + v + '-' + p); }
+  function label(x) { return volOf(x) + '권 ' + (x.part || '') + '강'; }
+
+  /* ================= 상태 ================= */
+  var vol = lsGet('jg-vol', 1);
+  var selByVol = lsGet('jg-selv', { 1: 'all', 2: 'all' });
+  var mode = lsGet('jg-mode', 'book');
+  var searching = false;
+  function sel() { return selByVol[vol] == null ? 'all' : selByVol[vol]; }
+  function setSel(v) { selByVol[vol] = v; lsSet('jg-selv', selByVol); }
+  function partsOf(v) {
+    var s = {};
+    MN.list().forEach(function (x) { if (volOf(x) === v && x.part) s[x.part] = true; });
+    return Object.keys(s).map(Number).sort(function (a, b) { return a - b; });
+  }
+  function inSel(list) {
+    var p = sel();
+    return list.filter(function (x) { return volOf(x) === vol && (p === 'all' || x.part === p); });
+  }
 
   /* ================= 복습 기록 (폰마다 따로) ================= */
   var SRS = lsGet('jg-srs', {});
@@ -465,84 +634,75 @@ dialog::backdrop { background: transparent; }
     return '<span class="c-ok">' + (r.due - t) + '일 뒤</span>';
   }
 
-  /* ================= 연상단어 목록 ================= */
-  var sel = lsGet('jg-sel', 'all');
-  var searching = false;
-  function bookSort(list) {
-    return list.slice().sort(function (a, b) {
-      return ((a.part || 0) - (b.part || 0)) || ((a.ord || 0) - (b.ord || 0)) || ((a.created || 0) - (b.created || 0));
-    });
-  }
-  function partsList() {
-    var s = {};
-    MN.list().forEach(function (x) { if (x.part) s[x.part] = true; });
-    return Object.keys(s).map(Number).sort(function (a, b) { return a - b; });
-  }
-  function inSel(list) {
-    if (sel === 'all') return list;
-    return list.filter(function (x) { return x.part === sel; });
-  }
-  function mnMatches(x, q) {
-    return (x.title + '\n' + (x.mean || '') + '\n' + (x.mn || '')).toLowerCase().indexOf(q) >= 0;
-  }
-  function visibleWords() {
-    var all = bookSort(MN.list());
-    if (searching) {
-      var q = $('mq').value.trim().toLowerCase();
-      return q ? all.filter(function (x) { return mnMatches(x, q); }) : [];
-    }
-    return inSel(all);
-  }
+  /* ================= 연상단어 화면 ================= */
   function renderPills() {
-    var ps = partsList();
-    if (sel !== 'all' && ps.indexOf(sel) < 0) sel = 'all';
-    var h = '<button class="pill' + (sel === 'all' ? ' on' : '') + '" data-p="all">전체</button>';
-    ps.forEach(function (p) { h += '<button class="pill' + (sel === p ? ' on' : '') + '" data-p="' + p + '">' + p + '강</button>'; });
+    var ps = partsOf(vol), p = sel();
+    if (p !== 'all' && ps.indexOf(p) < 0) { setSel('all'); p = 'all'; }
+    $('volbtn').textContent = vol + '권';
+    var h = '<button class="pill' + (p === 'all' ? ' on' : '') + '" data-p="all">전체</button>';
+    ps.forEach(function (n) { h += '<button class="pill' + (p === n ? ' on' : '') + '" data-p="' + n + '">' + n + '강</button>'; });
     var box = $('pills'), sx = box.scrollLeft;
     box.innerHTML = h;
     box.scrollLeft = sx;
   }
+  function wordRow(x, showWhere) {
+    var th = x.photo ? '<img class="th" loading="lazy" alt="" src="' + esc(photoUrl(x)) + '">' : '<span class="th no">' + (x.part || '') + '강</span>';
+    return '<button class="mrow" data-id="' + esc(x.id) + '">' + th + '<span class="tx"><span class="t">' + esc(x.title) +
+           '</span><span class="m">' + esc(firstLine(x.mean)) + '</span></span><span class="st">' +
+           (showWhere ? '<span class="c-mut">' + label(x) + '</span><br>' : '') + statusHtml(x.id) + '</span></button>';
+  }
   function renderMn() {
     renderPills();
-    var list = visibleWords(), t = today();
-    var st = '';
-    if (!searching && list.length) {
-      var due = 0, nw = 0;
-      list.forEach(function (x) { var r = srsOf(x.id); if (!r) nw++; else if (r.due <= t) due++; });
-      var n = due + Math.min(nw, NEW_PER_RUN);
-      if (n) {
-        var parts = [];
-        if (due) parts.push('복습 ' + due);
-        if (nw) parts.push('새 단어 ' + Math.min(nw, NEW_PER_RUN));
-        st = '<button class="mstart" id="mn-go">' + (sel === 'all' ? '전체' : sel + '강') + ' 외우기 · ' + parts.join(' · ') + '</button>';
-      } else {
-        st = '<button class="mstart done" type="button">오늘 외울 단어를 다 했습니다</button>';
+    renderPlayer();
+    $('mseg').hidden = searching;
+    document.querySelectorAll('#mseg button').forEach(function (b) { b.classList.toggle('on', b.dataset.m === mode); });
+    var listEl = $('mn-list'), em = $('mn-empty'), st = '', h = '', n = 0;
+    if (searching) {
+      var q = $('mq').value.trim().toLowerCase();
+      var found = q ? bookSort(words()).filter(function (x) { return (x.title + '\n' + (x.mean || '')).toLowerCase().indexOf(q) >= 0; }) : [];
+      h = found.length ? '<div class="mlist">' + found.map(function (x) { return wordRow(x, true); }).join('') + '</div>' : '';
+      n = found.length;
+      em.textContent = q ? '찾는 단어가 없습니다.' : '찾을 단어를 입력하세요. (1권·2권 전체에서 찾습니다)';
+    } else if (mode === 'book') {
+      var ps = bookSort(inSel(pages()));
+      ps.forEach(function (pg) {
+        h += '<button class="pgrow" data-pid="' + esc(pg.id) + '"><img loading="lazy" alt="" src="' + esc(photoUrl(pg)) + '">' +
+             '<div class="cap">' + label(pg) + ' · ' + (pg.pno || '') + '쪽 · ' + (pg.n || '') + '단어</div></button>';
+      });
+      n = ps.length;
+      em.textContent = MN.list().length ? '이 강에 넣은 페이지가 없습니다.\n+ 버튼으로 페이지 사진을 넣으세요.' : '아직 단어가 없습니다.\n+ 버튼으로 페이지 사진을 넣으세요.';
+    } else {
+      var ws = bookSort(inSel(words())), t = today();
+      if (ws.length) {
+        var due = 0, nw = 0;
+        ws.forEach(function (x) { var r = srsOf(x.id); if (!r) nw++; else if (r.due <= t) due++; });
+        var m = due + Math.min(nw, NEW_PER_RUN);
+        if (m) {
+          var parts = [];
+          if (due) parts.push('복습 ' + due);
+          if (nw) parts.push('새 단어 ' + Math.min(nw, NEW_PER_RUN));
+          st = '<button class="mstart" id="mn-go">외우기 · ' + parts.join(' · ') + '</button>';
+        } else st = '<button class="mstart done" type="button">오늘 외울 단어를 다 했습니다</button>';
+        h = '<div class="mlist">' + ws.map(function (x) { return wordRow(x, false); }).join('') + '</div>';
       }
+      n = ws.length;
+      em.textContent = '이 강에 단어가 없습니다.\n+ 버튼으로 페이지 사진을 넣으세요.';
     }
     $('mn-start').innerHTML = st;
-    var h = '';
-    list.forEach(function (x) {
-      var th = x.photo ? '<img class="th" loading="lazy" alt="" src="' + esc(photoUrl(x)) + '">' : '<span class="th no">' + (x.part ? x.part + '강' : '') + '</span>';
-      h += '<button class="mrow" data-id="' + esc(x.id) + '">' + th + '<span class="tx"><span class="t">' + esc(x.title) +
-           '</span><span class="m">' + esc(firstLine(x.mean)) + '</span></span><span class="st">' +
-           (searching ? '<span class="c-mut">' + (x.part || '') + '강</span><br>' : '') + statusHtml(x.id) + '</span></button>';
-    });
-    $('mn-list').innerHTML = h;
-    $('mn-list').hidden = !list.length;
-    var em = $('mn-empty');
-    if (!list.length) {
-      em.hidden = false;
-      if (searching) em.textContent = $('mq').value.trim() ? '찾는 단어가 없습니다.' : '찾을 단어나 뜻을 입력하세요.';
-      else em.textContent = MN.list().length ? '이 강에 단어가 없습니다.' : '연상단어가 없습니다.\n오른쪽 아래 + 버튼으로 추가하세요.';
-    } else em.hidden = true;
+    listEl.innerHTML = h;
+    em.hidden = n > 0;
   }
   MN.onchange = function () { renderMn(); if ($('vdlg').open) renderViewer(); };
 
+  $('volbtn').addEventListener('click', function () { vol = vol === 1 ? 2 : 1; lsSet('jg-vol', vol); $('pills').scrollLeft = 0; renderMn(); });
   $('pills').addEventListener('click', function (e) {
     var b = e.target.closest('.pill'); if (!b) return;
-    sel = b.dataset.p === 'all' ? 'all' : Number(b.dataset.p);
-    lsSet('jg-sel', sel);
+    setSel(b.dataset.p === 'all' ? 'all' : Number(b.dataset.p));
     renderMn();
+  });
+  $('mseg').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    mode = b.dataset.m; lsSet('jg-mode', mode); renderMn();
   });
   $('sbtn').addEventListener('click', function () {
     searching = true; $('h-mn').hidden = true; $('h-ms').hidden = false;
@@ -553,31 +713,148 @@ dialog::backdrop { background: transparent; }
   });
   $('mq').addEventListener('input', renderMn);
   $('mn-list').addEventListener('click', function (e) {
-    var b = e.target.closest('.mrow'); if (!b) return;
-    openBrowse(b.dataset.id);
+    var w = e.target.closest('.mrow');
+    if (w) { openCards(w.dataset.id); return; }
+    var p = e.target.closest('.pgrow');
+    if (p) openPages(p.dataset.pid);
   });
-  $('mn-start').addEventListener('click', function (e) {
-    if (e.target.id === 'mn-go') openStudy();
+  $('mn-start').addEventListener('click', function (e) { if (e.target.id === 'mn-go') openStudy(); });
+
+  /* ================= mp3 플레이어 ================= */
+  var au = $('au'), curTrack = null, seeking = false;
+  function fmt(t) { if (!isFinite(t)) return '0:00'; t = Math.floor(t); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+  function shownTrack() {
+    if (curTrack && MN.get(curTrack)) return MN.get(curTrack);
+    var p = sel();
+    if (p !== 'all') return audioOf(vol, p) || null;
+    return audios().filter(function (a) { return volOf(a) === vol; })[0] || null;
+  }
+  function renderPlayer() {
+    var tr = shownTrack(), p = sel();
+    if (searching) { $('player').hidden = true; $('pnone').hidden = true; return; }
+    if (!tr) {
+      $('player').hidden = true;
+      $('pnone').hidden = p === 'all';
+      $('pnone').textContent = vol + '권 ' + p + '강 mp3가 없습니다 · + 버튼에서 올릴 수 있습니다';
+      return;
+    }
+    $('pnone').hidden = true;
+    $('player').hidden = false;
+    var playing = curTrack === tr.id && !au.paused;
+    var other = p !== 'all' && (volOf(tr) !== vol || tr.part !== p);
+    $('pl-title').innerHTML = esc(label(tr)) + (playing ? ' <small>재생 중</small>' : '') + (other && audioOf(vol, p) ? ' <small>· 눌러서 ' + vol + '권 ' + p + '강으로</small>' : '');
+    $('pl-btn').innerHTML = playing ? '&#10074;&#10074;' : '&#9654;';
+    if (curTrack !== tr.id) { $('pl-seek').value = 0; $('pl-cur').textContent = '0:00'; $('pl-dur').textContent = ''; }
+  }
+  function playTrack(tr) {
+    curTrack = tr.id;
+    au.src = fileUrl(tr.id, tr.av);
+    au.play().catch(function () { toast('재생하지 못했습니다'); });
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({ title: label(tr), artist: '찌공이 단어장', artwork: [{ src: 'PakPak.png', sizes: '512x512', type: 'image/png' }] });
+      } catch (e) {}
+    }
+    renderPlayer();
+  }
+  function nextOf(id) { var l = audios(), i = l.findIndex(function (x) { return x.id === id; }); return i >= 0 ? l[i + 1] : null; }
+  function prevOf(id) { var l = audios(), i = l.findIndex(function (x) { return x.id === id; }); return i > 0 ? l[i - 1] : null; }
+  $('pl-btn').addEventListener('click', function () {
+    var p = sel(), want = (p !== 'all' && audioOf(vol, p)) || shownTrack();
+    if (!want) return;
+    if (curTrack === want.id) { if (au.paused) au.play().catch(function () {}); else au.pause(); }
+    else playTrack(want);
+  });
+  $('pl-next').addEventListener('click', function () {
+    var tr = shownTrack(); if (!tr) return;
+    var nx = nextOf(tr.id);
+    if (nx) playTrack(nx); else toast('마지막 강입니다');
+  });
+  au.addEventListener('ended', function () {
+    var nx = curTrack && nextOf(curTrack);
+    if (nx) playTrack(nx); else { renderPlayer(); }
+  });
+  au.addEventListener('play', renderPlayer);
+  au.addEventListener('pause', renderPlayer);
+  au.addEventListener('timeupdate', function () {
+    if (seeking || !au.duration) return;
+    var tr = shownTrack(); if (!tr || tr.id !== curTrack) return;
+    $('pl-seek').value = Math.round(au.currentTime / au.duration * 1000);
+    $('pl-cur').textContent = fmt(au.currentTime);
+    $('pl-dur').textContent = fmt(au.duration);
+    if ('mediaSession' in navigator && navigator.mediaSession.setPositionState) {
+      try { navigator.mediaSession.setPositionState({ duration: au.duration, position: au.currentTime, playbackRate: 1 }); } catch (e) {}
+    }
+  });
+  au.addEventListener('error', function () { if (au.src) toast('mp3를 불러오지 못했습니다'); });
+  $('pl-seek').addEventListener('input', function () { seeking = true; if (au.duration) $('pl-cur').textContent = fmt($('pl-seek').value / 1000 * au.duration); });
+  $('pl-seek').addEventListener('change', function () {
+    seeking = false;
+    var tr = shownTrack();
+    if (tr && tr.id === curTrack && au.duration) au.currentTime = $('pl-seek').value / 1000 * au.duration;
+  });
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('play', function () { au.play(); });
+      navigator.mediaSession.setActionHandler('pause', function () { au.pause(); });
+      navigator.mediaSession.setActionHandler('nexttrack', function () { var nx = curTrack && nextOf(curTrack); if (nx) playTrack(nx); });
+      navigator.mediaSession.setActionHandler('previoustrack', function () {
+        if (au.currentTime > 5) { au.currentTime = 0; return; }
+        var pv = curTrack && prevOf(curTrack); if (pv) playTrack(pv); else au.currentTime = 0;
+      });
+      navigator.mediaSession.setActionHandler('seekto', function (d) { if (d.seekTime != null) au.currentTime = d.seekTime; });
+    } catch (e) {}
+  }
+
+  /* ================= + 메뉴 ================= */
+  function openSheet() {
+    var p = sel();
+    $('s-vol').value = vol;
+    $('s-part').value = p === 'all' ? (partsOf(vol).slice(-1)[0] || 1) : p;
+    $('sheet').hidden = false;
+  }
+  function closeSheet() { $('sheet').hidden = true; }
+  $('s-close').addEventListener('click', closeSheet);
+  $('sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet') closeSheet(); });
+  var target = { vol: 1, part: 1 };
+  function readSheet() { target = { vol: Math.min(2, int($('s-vol').value, 1)), part: int($('s-part').value, 1) }; }
+  $('s-page').addEventListener('click', function () { readSheet(); closeSheet(); $('pfile').value = ''; $('pfile').click(); });
+  $('s-mp3').addEventListener('click', function () { readSheet(); closeSheet(); $('afile').value = ''; $('afile').click(); });
+  $('afile').addEventListener('change', async function () {
+    var f = $('afile').files && $('afile').files[0];
+    if (!f) return;
+    var id = 'a-' + target.vol + '-' + target.part, old = MN.get(id);
+    toast(target.vol + '권 ' + target.part + '강 mp3 올리는 중…');
+    try {
+      await upload(id, f, f.type || 'audio/mpeg');
+      await MN.put({ id: id, kind: 'audio', vol: target.vol, part: target.part, av: ((old && old.av) || 0) + 1, created: (old && old.created) || Date.now() });
+      if (curTrack === id) { au.pause(); curTrack = null; }
+      toast(target.vol + '권 ' + target.part + '강 mp3를 올렸습니다');
+    } catch (e) { toast('mp3를 올리지 못했습니다. 인터넷 연결을 확인해 주세요'); }
   });
 
-  /* ================= 연상 카드 보기 ================= */
+  /* ================= 페이지 보기 · 카드 보기 ================= */
   var V = null;
-  function openBrowse(id) {
+  function openPages(pid) {
+    var pg = MN.get(pid); if (!pg) return;
+    var ids = bookSort(pages()).filter(function (x) { return volOf(x) === volOf(pg) && x.part === pg.part; }).map(function (x) { return x.id; });
+    V = { type: 'page', ids: ids, i: Math.max(0, ids.indexOf(pid)) };
+    $('vdlg').showModal(); renderViewer();
+  }
+  function openCards(id) {
     var w = MN.get(id); if (!w) return;
-    var ids = bookSort(MN.list()).filter(function (x) { return x.part === w.part; }).map(function (x) { return x.id; });
-    V = { mode: 'browse', part: w.part, ids: ids, i: Math.max(0, ids.indexOf(id)), again: {} };
-    $('vdlg').showModal();
-    renderViewer();
+    var ids = bookSort(words()).filter(function (x) { return volOf(x) === volOf(w) && x.part === w.part; }).map(function (x) { return x.id; });
+    V = { type: 'card', mode: 'browse', ids: ids, i: Math.max(0, ids.indexOf(id)), again: {} };
+    $('vdlg').showModal(); renderViewer();
   }
   function openStudy() {
-    var t = today(), list = inSel(bookSort(MN.list()));
+    var t = today(), list = bookSort(inSel(words()));
     var due = list.filter(function (x) { var r = srsOf(x.id); return r && r.due <= t; });
     var nw = list.filter(function (x) { return !srsOf(x.id); }).slice(0, NEW_PER_RUN);
     var ids = due.concat(nw).map(function (x) { return x.id; });
     if (!ids.length) return;
-    V = { mode: 'study', label: sel === 'all' ? '전체' : sel + '강', ids: ids, i: 0, again: {}, total: ids.length };
-    $('vdlg').showModal();
-    renderViewer();
+    V = { type: 'card', mode: 'study', label: vol + '권 ' + (sel() === 'all' ? '전체' : sel() + '강'), ids: ids, i: 0, again: {}, total: ids.length };
+    $('vdlg').showModal(); renderViewer();
   }
   function mnHtml(s) { return esc(s).replace(/\*([^*\n]+)\*/g, '<b>$1</b>'); }
   function say(text) {
@@ -594,7 +871,7 @@ dialog::backdrop { background: transparent; }
     if (!V) return;
     V.ids = V.ids.filter(function (id) { return MN.get(id); });
     var stage = $('vstage');
-    if (V.mode === 'study' && V.i >= V.ids.length) {
+    if (V.type === 'card' && V.mode === 'study' && V.i >= V.ids.length) {
       $('v-title').textContent = V.label + ' 외우기';
       $('v-prev').hidden = $('v-next').hidden = $('v-edit').hidden = true;
       stage.innerHTML = '<div class="vdone"><div class="big">끝!</div><div>' + V.total + '단어를 봤습니다.</div><br><button class="mstart" id="v-close2">돌아가기</button></div>';
@@ -603,45 +880,50 @@ dialog::backdrop { background: transparent; }
     }
     if (!V.ids.length) { closeViewer(); return; }
     if (V.i >= V.ids.length) V.i = V.ids.length - 1;
-    var w = MN.get(V.ids[V.i]);
+    var x = MN.get(V.ids[V.i]);
     $('v-prev').hidden = $('v-next').hidden = $('v-edit').hidden = false;
-    $('v-title').textContent = (V.mode === 'study' ? V.label + ' 외우기' : (w.part || '') + '강') + ' · ' + (V.i + 1) + ' / ' + V.ids.length;
-    var r = srsOf(w.id);
-    var d = [0, 1, 2].map(function (k) { return LEVELS[nextLevel(r, k)]; });
-    var h = '<div class="vcard' + (dir ? ' out-' + dir : '') + '" id="vcard">' +
-      (w.photo ? '<img class="vimg" alt="" src="' + esc(photoUrl(w)) + '">' : '') +
-      '<div class="vword">' + esc(w.title) + '</div>' +
-      '<div class="vpron">' + (w.pron ? '<span>' + esc(w.pron) + '</span>' : '') + '<button class="say" id="v-say" type="button">🔊 발음</button></div>' +
-      (w.mean ? '<div class="vmean">' + esc(w.mean) + '</div>' : '') +
-      (w.mn ? '<div class="vmn">' + mnHtml(w.mn) + '</div>' : '') +
-      (w.cf ? '<div class="vcf">헷갈리는 단어: ' + esc(w.cf) + '</div>' : '') +
-      '<div class="rate"><button class="r0" data-r="0">몰랐음<small>' + (d[0] === 1 ? '내일' : d[0] + '일 뒤') + '</small></button>' +
-      '<button class="r1" data-r="1">헷갈림<small>' + d[1] + '일 뒤</small></button>' +
-      '<button class="r2" data-r="2">알았음<small>' + d[2] + '일 뒤</small></button></div>' +
-      '<div class="vhint">아래로 내리면 다음 단어 · 위로 올리면 이전 단어</div></div>';
-    stage.innerHTML = h;
+    var anim = dir ? ' out-' + dir : '';
+    if (V.type === 'page') {
+      $('v-title').textContent = label(x) + ' · ' + (V.i + 1) + ' / ' + V.ids.length + '쪽';
+      stage.innerHTML = '<div class="vcard' + anim + '" id="vcard"><img class="vpage" alt="" src="' + esc(photoUrl(x)) + '">' +
+        '<div class="vhint">아래로 내리면 다음 쪽 · 위로 올리면 이전 쪽</div></div>';
+    } else {
+      $('v-title').textContent = (V.mode === 'study' ? V.label + ' 외우기' : label(x)) + ' · ' + (V.i + 1) + ' / ' + V.ids.length;
+      var r = srsOf(x.id), d = [0, 1, 2].map(function (k) { return LEVELS[nextLevel(r, k)]; });
+      stage.innerHTML = '<div class="vcard' + anim + '" id="vcard">' +
+        (x.photo ? '<img class="vword-img" alt="" src="' + esc(photoUrl(x)) + '">' : '') +
+        '<div class="vpron" style="justify-content:space-between"><span class="vword" style="font-size:26px;color:var(--text)">' + esc(x.title) + '</span>' +
+        '<button class="say" id="v-say" type="button">🔊 발음</button></div>' +
+        (x.pron ? '<div class="vpron">' + esc(x.pron) + '</div>' : '') +
+        (x.mean ? '<div class="vmean">' + esc(x.mean) + '</div>' : '') +
+        (x.mn ? '<div class="vmn">' + mnHtml(x.mn) + '</div>' : '') +
+        (x.cf ? '<div class="vcf">헷갈리는 단어: ' + esc(x.cf) + '</div>' : '') +
+        '<div class="rate"><button class="r0" data-r="0">몰랐음<small>' + (d[0] === 1 ? '내일' : d[0] + '일 뒤') + '</small></button>' +
+        '<button class="r1" data-r="1">헷갈림<small>' + d[1] + '일 뒤</small></button>' +
+        '<button class="r2" data-r="2">알았음<small>' + d[2] + '일 뒤</small></button></div>' +
+        '<div class="vhint">아래로 내리면 다음 단어 · 위로 올리면 이전 단어</div></div>';
+      $('v-say').onclick = function () { say(x.title); };
+      stage.querySelectorAll('.rate button').forEach(function (b) {
+        b.onclick = function () {
+          var k = Number(b.dataset.r);
+          rate(x.id, k);
+          if (V.mode === 'study' && k === 0 && !V.again[x.id]) { V.again[x.id] = true; V.ids.push(x.id); }
+          renderMn();
+          if (V.mode === 'study' || V.i < V.ids.length - 1) { V.i++; renderViewer('down'); }
+          else { renderViewer(); toast('이 강의 마지막 단어입니다'); }
+        };
+      });
+    }
     stage.scrollTop = 0;
     if (dir) requestAnimationFrame(function () { requestAnimationFrame(function () { var c = $('vcard'); if (c) c.className = 'vcard'; }); });
-    $('v-say').onclick = function () { say(w.title); };
-    stage.querySelectorAll('.rate button').forEach(function (b) {
-      b.onclick = function () {
-        var k = Number(b.dataset.r);
-        rate(w.id, k);
-        if (V.mode === 'study' && k === 0 && !V.again[w.id]) { V.again[w.id] = true; V.ids.push(w.id); }
-        renderMn();
-        if (V.mode === 'study') { V.i++; renderViewer('down'); }
-        else if (V.i < V.ids.length - 1) { V.i++; renderViewer('down'); }
-        else { renderViewer(); toast('이 강의 마지막 단어입니다'); }
-      };
-    });
   }
   function go(step) {
-    if (!V || (V.mode === 'study' && V.i >= V.ids.length)) return;
+    if (!V || (V.type === 'card' && V.mode === 'study' && V.i >= V.ids.length)) return;
     var n = V.i + step;
-    if (n < 0) { toast('첫 단어입니다'); return; }
+    if (n < 0) { toast(V.type === 'page' ? '첫 쪽입니다' : '첫 단어입니다'); return; }
     if (n >= V.ids.length) {
-      if (V.mode === 'study') { V.i = n; renderViewer(); return; }
-      toast('이 강의 마지막 단어입니다'); return;
+      if (V.type === 'card' && V.mode === 'study') { V.i = n; renderViewer(); return; }
+      toast(V.type === 'page' ? '이 강의 마지막 쪽입니다' : '이 강의 마지막 단어입니다'); return;
     }
     V.i = n;
     renderViewer(step > 0 ? 'down' : 'up');
@@ -651,9 +933,12 @@ dialog::backdrop { background: transparent; }
   $('vdlg').addEventListener('cancel', function (e) { e.preventDefault(); closeViewer(); });
   $('v-prev').addEventListener('click', function () { go(-1); });
   $('v-next').addEventListener('click', function () { go(1); });
-  $('v-edit').addEventListener('click', function () { if (V && V.ids[V.i]) openMnEditor(V.ids[V.i]); });
+  $('v-edit').addEventListener('click', function () {
+    if (!V || !V.ids[V.i]) return;
+    if (V.type === 'page') openPageEdit(V.ids[V.i]); else openWordEdit(V.ids[V.i]);
+  });
   (function () {
-    var st = $('vstage'), sy = 0, sx = 0, top0 = 0, bot0 = 0, on = false;
+    var st = $('vstage'), sy = 0, sx = 0, top0 = false, bot0 = false, on = false;
     st.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1) { on = false; return; }
       on = true; sy = e.touches[0].clientY; sx = e.touches[0].clientX;
@@ -669,108 +954,35 @@ dialog::backdrop { background: transparent; }
     }, { passive: true });
   })();
 
-  /* ================= 연상단어 입력 ================= */
-  var E = null;
-  function openMnEditor(id) {
-    var w = id ? MN.get(id) : null;
-    var lastPart = sel !== 'all' ? sel : (partsList().slice(-1)[0] || 1);
-    E = { id: w ? w.id : null, photo: w ? !!w.photo : false, pv: w ? (w.pv || 0) : 0, blob: null, blobUrl: '', delPhoto: false, delArmed: false };
-    $('e-title').textContent = w ? '연상단어 고치기' : '연상단어 추가';
-    $('f-word').value = w ? w.title : '';
-    $('f-pron').value = w ? (w.pron || '') : '';
-    $('f-mean').value = w ? (w.mean || '') : '';
-    $('f-mn').value = w ? (w.mn || '') : '';
-    $('f-part').value = w ? (w.part || '') : lastPart;
-    $('f-ord').value = w && w.ord ? w.ord : '';
-    $('f-cf').value = w ? (w.cf || '') : '';
+  /* ================= 단어 고치기 ================= */
+  var EW = null;
+  function openWordEdit(id) {
+    var w = MN.get(id); if (!w) return;
+    EW = { id: id, armed: false };
+    $('f-word').value = w.title || '';
+    $('f-pron').value = w.pron || '';
     $('e-err').textContent = '';
     $('e-del').textContent = '삭제';
-    $('e-del').hidden = !w;
-    E.orig = snapshot();
-    renderPhotoSlot(w);
+    var img = $('e-img');
+    if (w.photo) { img.src = photoUrl(w); img.hidden = false; } else img.hidden = true;
     $('edlg').showModal();
-    $('edlg').querySelector('.mf').scrollTop = 0;
   }
-  function snapshot() {
-    return ['f-word', 'f-pron', 'f-mean', 'f-mn', 'f-part', 'f-ord', 'f-cf'].map(function (k) { return $(k).value; }).join('\u0001');
-  }
-  function renderPhotoSlot(w) {
-    var slot = $('e-photo'), tools = $('e-ptools');
-    if (E.blobUrl) slot.innerHTML = '<img alt="" src="' + E.blobUrl + '">';
-    else if (E.photo && !E.delPhoto && w) slot.innerHTML = '<img alt="" src="' + esc(photoUrl(w)) + '">';
-    else slot.innerHTML = '📷 그림 사진 올리기 (찍기 / 고르기)';
-    var has = E.blobUrl || (E.photo && !E.delPhoto);
-    tools.innerHTML = has ? '<button class="btn" type="button" id="e-pchg">사진 바꾸기</button><button class="btn danger" type="button" id="e-pdel">사진 삭제</button>' : '';
-    if (has) {
-      $('e-pchg').onclick = pickPhoto;
-      $('e-pdel').onclick = function () {
-        if (E.blobUrl) { URL.revokeObjectURL(E.blobUrl); E.blobUrl = ''; E.blob = null; }
-        if (E.photo) E.delPhoto = true;
-        renderPhotoSlot(MN.get(E.id));
-      };
-    }
-  }
-  function pickPhoto() { $('pfile').value = ''; $('pfile').click(); }
-  $('e-photo').addEventListener('click', function () { if (!E.blobUrl && !(E.photo && !E.delPhoto)) pickPhoto(); });
-
-  async function saveMn(close) {
+  $('e-back').addEventListener('click', function () { $('edlg').close(); });
+  $('edlg').addEventListener('cancel', function (e) { e.preventDefault(); $('edlg').close(); });
+  $('e-save').addEventListener('click', async function () {
+    var w = MN.get(EW.id); if (!w) { $('edlg').close(); return; }
     var title = $('f-word').value.trim();
-    var changed = snapshot() !== E.orig || E.blob || E.delPhoto;
-    if (!E.id && !title && !E.blob) { if (close) $('edlg').close(); return; }
-    if (!changed) { if (close) $('edlg').close(); return; }
-    if (!title) { $('e-err').textContent = '단어를 입력해 주세요.'; $('f-word').focus(); return; }
-    var part = parseInt($('f-part').value, 10);
-    if (!(part >= 1)) { $('e-err').textContent = '강 번호를 입력해 주세요.'; $('f-part').focus(); return; }
-    var old = E.id ? MN.get(E.id) : null;
-    var it = Object.assign({}, old || { id: newId('m'), created: Date.now() });
-    it.title = title;
-    it.pron = $('f-pron').value.trim();
-    it.mean = $('f-mean').value.replace(/\s+$/, '');
-    it.mn = $('f-mn').value.replace(/\s+$/, '');
-    it.cf = $('f-cf').value.trim();
-    var ord = parseFloat($('f-ord').value);
-    if (!(ord > 0)) {
-      if (old && old.part === part && old.ord) ord = old.ord;
-      else {
-        var mx = 0;
-        MN.list().forEach(function (x) { if (x.part === part && x.id !== it.id && (x.ord || 0) > mx) mx = x.ord || 0; });
-        ord = mx + 1;
-      }
-    }
-    it.part = part; it.ord = ord;
-    $('e-save').disabled = true;
-    try {
-      if (E.blob) {
-        var r = await fetch(API + '/photo/' + it.id, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'image/jpeg' }, H), body: E.blob });
-        if (!r.ok) throw new Error('photo');
-        it.photo = true; it.pv = (it.pv || 0) + 1;
-      } else if (E.delPhoto) {
-        fetch(API + '/photo/' + it.id, { method: 'DELETE', headers: H }).catch(function () {});
-        it.photo = false;
-      }
-    } catch (e) {
-      $('e-save').disabled = false;
-      $('e-err').textContent = '사진을 올리지 못했습니다. 인터넷 연결을 확인해 주세요.';
-      return;
-    }
-    $('e-save').disabled = false;
-    if (E.blobUrl) URL.revokeObjectURL(E.blobUrl);
-    E.id = it.id;
-    await MN.put(it);
+    if (!title) { $('e-err').textContent = '단어를 입력해 주세요.'; return; }
     $('edlg').close();
-  }
-  $('e-save').addEventListener('click', function () { saveMn(true); });
-  $('e-back').addEventListener('click', function () { saveMn(true); });
-  $('edlg').addEventListener('cancel', function (e) { e.preventDefault(); saveMn(true); });
+    await MN.put(Object.assign({}, w, { title: title, pron: $('f-pron').value.trim() }));
+  });
   $('e-del').addEventListener('click', async function () {
-    if (!E.id) return;
-    if (!E.delArmed) { E.delArmed = true; $('e-del').textContent = '정말 삭제'; return; }
-    var w = MN.get(E.id); if (!w) { $('edlg').close(); return; }
+    if (!EW.armed) { EW.armed = true; $('e-del').textContent = '정말 삭제'; return; }
+    var w = MN.get(EW.id); $('edlg').close();
+    if (!w) return;
     if (w.photo) fetch(API + '/photo/' + w.id, { method: 'DELETE', headers: H }).catch(function () {});
-    var it = Object.assign({}, w, { del: true });
     delete SRS[w.id]; lsSet('jg-srs', SRS);
-    $('edlg').close();
-    await MN.put(it);
+    await MN.put(Object.assign({}, w, { del: true }));
   });
 
   /* ================= 사진 펴기 ================= */
@@ -780,7 +992,7 @@ dialog::backdrop { background: transparent; }
     if (!f) return;
     var url = URL.createObjectURL(f), img = new Image();
     img.onload = function () {
-      var sc = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+      var sc = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight));
       var c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
@@ -876,7 +1088,7 @@ dialog::backdrop { background: transparent; }
     function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
     var ow = (dist(P[0], P[1]) + dist(P[3], P[2])) / 2, oh = (dist(P[0], P[3]) + dist(P[1], P[2])) / 2;
     if (ow < 10 || oh < 10) return null;
-    var k = Math.min(1, 1200 / Math.max(ow, oh));
+    var k = Math.min(1, 1800 / Math.max(ow, oh));
     ow = Math.round(ow * k); oh = Math.round(oh * k);
     var D = [[0, 0], [ow, 0], [ow, oh], [0, oh]], A = [], b = [];
     for (var i = 0; i < 4; i++) {
@@ -907,26 +1119,21 @@ dialog::backdrop { background: transparent; }
     return out;
   }
   function usePhoto(canvas) {
-    canvas.toBlob(function (blob) {
-      if (!blob) { toast('사진을 만들지 못했습니다'); return; }
-      if (E.blobUrl) URL.revokeObjectURL(E.blobUrl);
-      E.blob = blob; E.blobUrl = URL.createObjectURL(blob); E.delPhoto = false;
-      C = null;
-      $('cdlg').close();
-      renderPhotoSlot(E.id ? MN.get(E.id) : null);
-    }, 'image/jpeg', 0.85);
+    C = null;
+    $('cdlg').close();
+    openSplit(canvas);
   }
   $('c-ok').addEventListener('click', function () {
     var b = $('c-ok'); b.textContent = '처리 중…';
     setTimeout(function () {
       var out = warp();
-      b.textContent = '완료';
+      b.textContent = '다음';
       if (!out) { toast('점이 너무 가깝거나 꼬였습니다. 다시 맞춰 주세요'); return; }
       usePhoto(out);
     }, 30);
   });
   $('c-raw').addEventListener('click', function () {
-    var W = C.src.width, Hh = C.src.height, k = Math.min(1, 1200 / Math.max(W, Hh)), c = document.createElement('canvas');
+    var W = C.src.width, Hh = C.src.height, k = Math.min(1, 1800 / Math.max(W, Hh)), c = document.createElement('canvas');
     c.width = Math.round(W * k); c.height = Math.round(Hh * k);
     c.getContext('2d').drawImage(C.src, 0, 0, c.width, c.height);
     usePhoto(c);
@@ -937,6 +1144,175 @@ dialog::backdrop { background: transparent; }
   });
   $('c-back').addEventListener('click', function () { C = null; $('cdlg').close(); });
   $('cdlg').addEventListener('cancel', function (e) { e.preventDefault(); C = null; $('cdlg').close(); });
+
+  /* ================= 칸 나누기 ================= */
+  var SP = null;
+  function nextPno(v, p) {
+    var mx = 0;
+    pages().forEach(function (x) { if (volOf(x) === v && x.part === p && (x.pno || 0) > mx) mx = x.pno; });
+    return mx + 1;
+  }
+  function openSplit(canvas) {
+    var pno = nextPno(target.vol, target.part);
+    SP = { page: canvas, x: 0.5, ys: [], drag: null, pno: pno };
+    $('sdlg').showModal();
+    setN(pno % 2 === 1 ? 6 : 4);
+  }
+  function setN(n) {
+    SP.n = n;
+    SP.ys = n === 6 ? [1 / 3, 2 / 3] : [0.5];
+    document.querySelectorAll('#sp-n button').forEach(function (b) { b.classList.toggle('on', Number(b.dataset.n) === n); });
+    setupSplit();
+  }
+  $('sp-n').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && SP) setN(Number(b.dataset.n)); });
+  function setupSplit() {
+    var cv = $('scv'), W = SP.page.width, Hh = SP.page.height, dpr = window.devicePixelRatio || 1;
+    var cw = Math.max(200, window.innerWidth - 32), ch = Math.max(200, window.innerHeight * 0.66);
+    var s = Math.min(cw / W, ch / Hh);
+    SP.CW = W * s; SP.CH = Hh * s; SP.dpr = dpr;
+    cv.style.width = SP.CW + 'px'; cv.style.height = SP.CH + 'px';
+    cv.width = Math.round(SP.CW * dpr); cv.height = Math.round(SP.CH * dpr);
+    drawSplit();
+  }
+  function drawSplit() {
+    var ctx = $('scv').getContext('2d'), CW = SP.CW, CH = SP.CH;
+    ctx.setTransform(SP.dpr, 0, 0, SP.dpr, 0, 0);
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.drawImage(SP.page, 0, 0, CW, CH);
+    ctx.lineWidth = 3; ctx.strokeStyle = '#e53935'; ctx.fillStyle = '#e53935';
+    var x = SP.x * CW;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, CH / 2, 10, 0, Math.PI * 2); ctx.fill();
+    SP.ys.forEach(function (y) {
+      var yy = y * CH;
+      ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(CW, yy); ctx.stroke();
+      ctx.beginPath(); ctx.arc(CW / 4, yy, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(CW * 3 / 4, yy, 10, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var cols = [0, SP.x, 1], rows = [0].concat(SP.ys, [1]), k = 0;
+    for (var r = 0; r < rows.length - 1; r++) for (var c = 0; c < 2; c++) {
+      k++;
+      var cx = (cols[c] + cols[c + 1]) / 2 * CW, cy = rows[r] * CH + 16;
+      ctx.fillStyle = 'rgba(229,57,53,.9)'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(String(k), cx, cy + 1);
+    }
+  }
+  (function () {
+    var cv = $('scv');
+    function pos(e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    cv.addEventListener('pointerdown', function (e) {
+      if (!SP) return;
+      var p = pos(e), best = null, bd = 30;
+      var dv = Math.abs(p[0] - SP.x * SP.CW); if (dv < bd) { bd = dv; best = { t: 'x' }; }
+      SP.ys.forEach(function (y, i) { var d = Math.abs(p[1] - y * SP.CH); if (d < bd) { bd = d; best = { t: 'y', i: i }; } });
+      if (!best) return;
+      SP.drag = best; cv.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    cv.addEventListener('pointermove', function (e) {
+      if (!SP || !SP.drag) return;
+      var p = pos(e);
+      if (SP.drag.t === 'x') SP.x = Math.max(0.15, Math.min(0.85, p[0] / SP.CW));
+      else {
+        var i = SP.drag.i, lo = i > 0 ? SP.ys[i - 1] + 0.08 : 0.08, hi = i < SP.ys.length - 1 ? SP.ys[i + 1] - 0.08 : 0.92;
+        SP.ys[i] = Math.max(lo, Math.min(hi, p[1] / SP.CH));
+      }
+      drawSplit();
+    });
+    function up() { if (SP) SP.drag = null; }
+    cv.addEventListener('pointerup', up);
+    cv.addEventListener('pointercancel', up);
+  })();
+  $('sp-back').addEventListener('click', function () { SP = null; $('sdlg').close(); });
+  $('sdlg').addEventListener('cancel', function (e) { e.preventDefault(); SP = null; $('sdlg').close(); });
+  $('sp-ok').addEventListener('click', function () {
+    var W = SP.page.width, Hh = SP.page.height, cols = [0, SP.x, 1], rows = [0].concat(SP.ys, [1]), slots = [];
+    for (var r = 0; r < rows.length - 1; r++) for (var c = 0; c < 2; c++) {
+      var x0 = Math.round(cols[c] * W), x1 = Math.round(cols[c + 1] * W), y0 = Math.round(rows[r] * Hh), y1 = Math.round(rows[r + 1] * Hh);
+      var cc = document.createElement('canvas'); cc.width = x1 - x0; cc.height = y1 - y0;
+      cc.getContext('2d').drawImage(SP.page, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
+      slots.push(cc);
+    }
+    var o = { edit: false, page: SP.page, slots: slots, vol: target.vol, part: target.part, pno: SP.pno };
+    SP = null; $('sdlg').close();
+    openNames(o);
+  });
+
+  /* ================= 단어 이름 적기 / 페이지 고치기 ================= */
+  var NM = null;
+  function openNames(o) {
+    NM = o; NM.armed = false;
+    $('n-title').textContent = o.edit ? '페이지 고치기' : '3. 단어 이름 적기';
+    $('n-del').hidden = !o.edit; $('n-del').textContent = '페이지 삭제';
+    $('n-err').textContent = '';
+    $('n-save').disabled = false; $('n-save').textContent = '저장';
+    $('n-vol').value = o.vol; $('n-part').value = o.part; $('n-pno').value = o.pno;
+    var h = '';
+    for (var i = 0; i < (o.edit ? o.words.length : o.slots.length); i++) {
+      var src = o.edit ? (o.words[i].photo ? photoUrl(o.words[i]) : '') : o.slots[i].toDataURL('image/jpeg', 0.7);
+      var val = o.edit ? (o.words[i].title || '') : '';
+      h += '<div class="nrow"><img alt="" src="' + esc(src) + '"><div class="nf"><span>' + (i + 1) + '번 단어</span>' +
+           '<input class="nin" data-i="' + i + '" value="' + esc(val) + '" autocomplete="off" autocapitalize="none" placeholder="영어 단어"></div></div>';
+    }
+    $('n-list').innerHTML = h;
+    $('ndlg').showModal();
+    $('ndlg').querySelector('.mf').scrollTop = 0;
+  }
+  function openPageEdit(pid) {
+    var pg = MN.get(pid); if (!pg) return;
+    var ws = MN.list().filter(function (x) { return kindOf(x) === 'word' && x.pageId === pid; })
+      .sort(function (a, b) { return (a.slot || 0) - (b.slot || 0); });
+    openNames({ edit: true, pid: pid, words: ws, vol: volOf(pg), part: pg.part, pno: pg.pno || 1 });
+  }
+  function closeNames() { NM = null; $('ndlg').close(); }
+  $('n-back').addEventListener('click', closeNames);
+  $('ndlg').addEventListener('cancel', function (e) { e.preventDefault(); closeNames(); });
+  $('n-save').addEventListener('click', async function () {
+    var v = Math.min(2, int($('n-vol').value, 0)), p = int($('n-part').value, 0), pno = int($('n-pno').value, 0);
+    if (!v || !p || !pno) { $('n-err').textContent = '권, 강, 쪽 번호를 입력해 주세요.'; return; }
+    var names = Array.prototype.map.call(document.querySelectorAll('#n-list .nin'), function (el) { return el.value.trim(); });
+    var btn = $('n-save'); btn.disabled = true;
+    try {
+      if (NM.edit) {
+        var pg = MN.get(NM.pid), list = [Object.assign({}, pg, { vol: v, part: p, pno: pno })];
+        NM.words.forEach(function (w, i) { list.push(Object.assign({}, w, { vol: v, part: p, pno: pno, title: names[i] || '' })); });
+        closeNames();
+        await MN.putMany(list);
+        return;
+      }
+      var pid = newId('p'), now = Date.now(), total = NM.slots.length + 1, done = 0;
+      btn.textContent = '올리는 중 0/' + total;
+      await upload(pid, await toBlob(NM.page, 1800), 'image/jpeg');
+      btn.textContent = '올리는 중 ' + (++done) + '/' + total;
+      var items = [{ id: pid, kind: 'page', vol: v, part: p, pno: pno, n: NM.slots.length, photo: true, pv: 1, created: now }];
+      for (var i = 0; i < NM.slots.length; i++) {
+        var wid = newId('w');
+        await upload(wid, await toBlob(NM.slots[i], 1100), 'image/jpeg');
+        btn.textContent = '올리는 중 ' + (++done) + '/' + total;
+        items.push({ id: wid, kind: 'word', vol: v, part: p, pno: pno, ord: i + 1, slot: i, pageId: pid, title: names[i] || '', photo: true, pv: 1, created: now + i + 1 });
+      }
+      var cnt = names.filter(Boolean).length;
+      closeNames();
+      vol = v; lsSet('jg-vol', vol); setSel(p);
+      await MN.putMany(items);
+      toast(v + '권 ' + p + '강 ' + pno + '쪽을 저장했습니다 (' + cnt + '단어)');
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '저장';
+      $('n-err').textContent = '사진을 올리지 못했습니다. 인터넷 연결을 확인하고 다시 저장해 주세요.';
+    }
+  });
+  $('n-del').addEventListener('click', async function () {
+    if (!NM || !NM.edit) return;
+    if (!NM.armed) { NM.armed = true; $('n-del').textContent = '정말 삭제'; return; }
+    var pg = MN.get(NM.pid), ws = NM.words;
+    closeNames();
+    if (!pg) return;
+    var list = [Object.assign({}, pg, { del: true })];
+    ws.forEach(function (w) { list.push(Object.assign({}, w, { del: true })); delete SRS[w.id]; });
+    lsSet('jg-srs', SRS);
+    [pg].concat(ws).forEach(function (x) { fetch(API + '/photo/' + x.id, { method: 'DELETE', headers: H }).catch(function () {}); });
+    await MN.putMany(list);
+  });
 
   /* ================= 팍팍 (처음 기능 그대로) ================= */
   var editingId = null;
