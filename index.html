@@ -1022,14 +1022,38 @@ dialog::backdrop { background: transparent; }
     $('vdlg').showModal(); renderViewer();
   }
   function mnHtml(s) { return esc(s).replace(/\*([^*\n]+)\*/g, '<b>$1</b>'); }
-  function say(text) {
+  try { if ('speechSynthesis' in window) { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = function () { speechSynthesis.getVoices(); }; } } catch (e) {}
+  function pickVoice() {
+    var vs = speechSynthesis.getVoices() || [];
+    return vs.find(function (v) { return /^en[-_]US/i.test(v.lang) && v.localService; }) ||
+           vs.find(function (v) { return /^en[-_]US/i.test(v.lang); }) ||
+           vs.find(function (v) { return /^en/i.test(v.lang); }) || null;
+  }
+  function say(text, retry) {
+    if (!('speechSynthesis' in window)) { toast('이 폰에서는 읽어주기를 쓸 수 없습니다'); return; }
     try {
-      speechSynthesis.cancel();
+      var ss = window.speechSynthesis, started = false, handled = false;
+      ss.cancel();
+      ss.resume();
       var u = new SpeechSynthesisUtterance(text);
-      u.lang = 'en-US'; u.rate = 0.9;
-      var v = speechSynthesis.getVoices().find(function (v) { return /^en[-_]US/i.test(v.lang); });
+      u.lang = 'en-US'; u.rate = 0.9; u.volume = 1;
+      var v = retry ? null : pickVoice();
       if (v) u.voice = v;
-      speechSynthesis.speak(u);
+      u.onstart = function () { started = true; };
+      u.onerror = function (e) {
+        if (handled || started || e.error === 'interrupted' || e.error === 'canceled') return;
+        handled = true;
+        if (!retry) say(text, true);
+        else toast('소리가 안 나면 미디어 음량과 폰의 글자 읽어주기 설정을 확인해 주세요');
+      };
+      setTimeout(function () { ss.speak(u); }, 80);
+      setTimeout(function () {
+        if (started || handled) return;
+        handled = true;
+        ss.cancel();
+        if (!retry) say(text, true);
+        else toast('소리가 안 나면 미디어 음량과 폰의 글자 읽어주기 설정을 확인해 주세요');
+      }, 2000);
     } catch (e) {}
   }
   function renderViewer(dir) {
