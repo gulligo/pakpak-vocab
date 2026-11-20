@@ -244,7 +244,6 @@ dialog::backdrop { background: transparent; }
 .phd:first-child { margin-top: 4px; }
 .phd b { font-size: 18px; }
 .phd button { border: none; border-radius: 16px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; background: var(--accent); color: var(--surface); font-weight: 600; }
-#n-bright[hidden] { display: none; }
 .phd .pbt { display: flex; gap: 6px; }
 .phd button.rv { background: var(--danger); }
 .phd button.done { background: var(--accent-bg); color: var(--accent); font-weight: 400; }
@@ -493,7 +492,6 @@ dialog::backdrop { background: transparent; }
     <span class="tt" id="n-title">3. 단어 이름 적기</span>
     <span class="sp"></span>
     <button class="icon danger" id="n-del" type="button">삭제</button>
-    <button class="btn" id="n-bright" type="button">☀️ 밝게</button>
     <button class="btn pri" id="n-save" type="button">저장</button>
   </div>
   <div class="err" id="n-err"></div>
@@ -985,26 +983,6 @@ dialog::backdrop { background: transparent; }
   function readSheet() { target = { vol: Math.min(2, int($('s-vol').value, 1)), part: int($('s-part').value, 1) }; }
   $('s-page').addEventListener('click', function () { readSheet(); closeSheet(); $('pfile').value = ''; $('pfile').click(); });
   $('s-mp3').addEventListener('click', function () { readSheet(); closeSheet(); $('afile').value = ''; $('afile').click(); });
-  async function brightenItems(todo) {
-    var done = 0, fail = 0, list = [];
-    for (var i = 0; i < todo.length; i++) {
-      var x = todo[i];
-      toast('밝게 바꾸는 중 ' + (i + 1) + ' / ' + todo.length);
-      try {
-        var r = await fetch(fileUrl(x.id, x.pv) + '&b=' + Date.now(), { cache: 'no-store' });
-        if (!r.ok) throw new Error('get');
-        var bmp = await createImageBitmap(await r.blob());
-        var c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
-        c.getContext('2d').drawImage(bmp, 0, 0);
-        brighten(c);
-        await upload(x.id, await toBlob(c), 'image/jpeg');
-        list.push(Object.assign({}, x, { pv: (x.pv || 0) + 1, bright: true }));
-        done++;
-      } catch (e) { fail++; }
-    }
-    if (list.length) await MN.putMany(list);
-    toast('그림 ' + done + '장을 밝게 바꿨습니다' + (fail ? ' (실패 ' + fail + '장 — 인터넷 확인 후 다시 눌러 주세요)' : ''));
-  }
   $('afile').addEventListener('change', async function () {
     var f = $('afile').files && $('afile').files[0];
     if (!f) return;
@@ -1354,33 +1332,7 @@ dialog::backdrop { background: transparent; }
     octx.putImageData(od, 0, 0);
     return out;
   }
-  function brighten(canvas) {
-    try {
-      var ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
-      var img = ctx.getImageData(0, 0, w, h), d = img.data, n = w * h;
-      var lo = [0, 0, 0], hi = [255, 255, 255];
-      for (var c = 0; c < 3; c++) {
-        var hist = new Uint32Array(256), step = Math.max(1, Math.floor(n / 200000));
-        for (var i = 0; i < n; i += step) hist[d[i * 4 + c]]++;
-        var tot = Math.ceil(n / step), acc = 0, a = 0, b = 255;
-        for (a = 0; a < 256; a++) { acc += hist[a]; if (acc > tot * 0.005) break; }
-        acc = 0;
-        for (b = 255; b >= 0; b--) { acc += hist[b]; if (acc > tot * 0.04) break; }
-        if (b - a < 40) { a = 0; b = 255; }
-        lo[c] = a; hi[c] = b;
-      }
-      var lut = [0, 1, 2].map(function (c) {
-        var t = new Uint8ClampedArray(256), r = 255 / Math.max(1, hi[c] - lo[c]);
-        for (var v = 0; v < 256; v++) t[v] = (v - lo[c]) * r;
-        return t;
-      });
-      for (var j = 0; j < d.length; j += 4) { d[j] = lut[0][d[j]]; d[j + 1] = lut[1][d[j + 1]]; d[j + 2] = lut[2][d[j + 2]]; }
-      ctx.putImageData(img, 0, 0);
-    } catch (e) {}
-    return canvas;
-  }
   function usePhoto(canvas) {
-    brighten(canvas);
     C = null;
     $('cdlg').close();
     openSplit(canvas);
@@ -1532,7 +1484,6 @@ dialog::backdrop { background: transparent; }
     NM = o; NM.armed = false;
     $('n-title').textContent = o.edit ? '고치기' : '3. 단어 이름 적기';
     $('n-del').hidden = !o.edit; $('n-del').textContent = '삭제';
-    $('n-bright').hidden = !o.edit;
     $('n-err').textContent = '';
     $('n-save').disabled = false; $('n-save').textContent = '저장';
     $('n-vol').value = o.vol; $('n-part').value = o.part; $('n-pno').value = o.pno;
@@ -1573,12 +1524,12 @@ dialog::backdrop { background: transparent; }
       btn.textContent = '올리는 중 0/' + total;
       await upload(pid, await toBlob(NM.page, 1800), 'image/jpeg');
       btn.textContent = '올리는 중 ' + (++done) + '/' + total;
-      var items = [{ id: pid, kind: 'page', vol: v, part: p, pno: pno, n: NM.slots.length, photo: true, pv: 1, bright: true, created: now }];
+      var items = [{ id: pid, kind: 'page', vol: v, part: p, pno: pno, n: NM.slots.length, photo: true, pv: 1, created: now }];
       for (var i = 0; i < NM.slots.length; i++) {
         var wid = newId('w');
         await upload(wid, await toBlob(NM.slots[i], 1100), 'image/jpeg');
         btn.textContent = '올리는 중 ' + (++done) + '/' + total;
-        items.push({ id: wid, kind: 'word', vol: v, part: p, pno: pno, ord: i + 1, slot: i, pageId: pid, title: names[i] || '', photo: true, pv: 1, bright: true, sw: NM.slots[i].width, sh: NM.slots[i].height, created: now + i + 1 });
+        items.push({ id: wid, kind: 'word', vol: v, part: p, pno: pno, ord: i + 1, slot: i, pageId: pid, title: names[i] || '', photo: true, pv: 1, sw: NM.slots[i].width, sh: NM.slots[i].height, created: now + i + 1 });
       }
       var cnt = names.filter(Boolean).length;
       closeNames();
@@ -1589,13 +1540,6 @@ dialog::backdrop { background: transparent; }
       btn.disabled = false; btn.textContent = '저장';
       $('n-err').textContent = '사진을 올리지 못했습니다. 인터넷 연결을 확인하고 다시 저장해 주세요.';
     }
-  });
-  $('n-bright').addEventListener('click', async function () {
-    if (!NM || !NM.edit) return;
-    var pg = MN.get(NM.pid);
-    var todo = (pg && pg.photo ? [pg] : []).concat(NM.words.filter(function (w) { return w.photo; }));
-    closeNames();
-    if (todo.length) await brightenItems(todo);
   });
   $('n-del').addEventListener('click', async function () {
     if (!NM || !NM.edit) return;
