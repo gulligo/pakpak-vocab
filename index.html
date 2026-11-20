@@ -257,6 +257,9 @@ dialog::backdrop { background: transparent; }
 .tile.seen { background: var(--accent-bg); border-color: var(--accent); }
 .tile.seen img { opacity: .5; }
 .tile .sk { position: absolute; left: 4px; bottom: 4px; background: var(--accent); color: var(--surface); border-radius: 10px; font-size: 11px; padding: 2px 7px; line-height: 1.3; }
+.vfront { position: relative; min-height: 62vh; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; cursor: pointer; text-align: center; }
+.vfw { font-size: 40px; font-weight: 700; word-break: break-word; line-height: 1.2; }
+.vtap { margin-top: 30px; color: var(--muted); font-size: 14px; }
 .vmemo { background: var(--r1); border-radius: 10px; padding: 10px 12px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; margin: 0 0 10px; cursor: pointer; }
 .vmemo b { color: var(--warn); }
 
@@ -1000,6 +1003,20 @@ dialog::backdrop { background: transparent; }
     } else {
       $('v-title').textContent = (V.mode === 'study' ? V.label + ' 외우기' : label(x)) + ' · ' + (V.i + 1) + ' / ' + V.ids.length;
       var r = srsOf(x.id), d = [0, 1, 2].map(function (k) { return LEVELS[nextLevel(r, k)]; });
+      if (V.mode === 'study' && !V.flip && x.title) {
+        stage.innerHTML = '<div class="vcard' + anim + '" id="vcard"><div class="vfront" id="v-front">' +
+          '<div class="vfw">' + esc(x.title) + '</div>' +
+          (x.pron ? '<div class="vpron" style="justify-content:center">' + esc(x.pron) + '</div>' : '') +
+          '<button class="say" id="v-say" type="button" style="position:absolute;top:12px;right:12px">🔊 다시 듣기</button>' +
+          '<div class="vtap">뜻을 떠올려 본 뒤 탭하세요</div></div>' +
+          '<div class="vhint">아래로 내리면 다음 단어 · 위로 올리면 이전 단어</div></div>';
+        $('v-say').onclick = function (e) { e.stopPropagation(); say(x.title); };
+        $('v-front').onclick = function () { V.flip = true; renderViewer(); };
+        if (V.spoken !== x.id + ':' + V.i) { V.spoken = x.id + ':' + V.i; say(x.title); }
+        stage.scrollTop = 0;
+        if (dir) requestAnimationFrame(function () { requestAnimationFrame(function () { var c = $('vcard'); if (c) c.className = 'vcard'; }); });
+        return;
+      }
       stage.innerHTML = '<div class="vcard' + anim + '" id="vcard">' +
         (x.photo ? '<img class="vword-img" alt="" src="' + esc(photoUrl(x)) + '">' : '') +
         (String(x.memo || '').trim() ? '<div class="vmemo" id="v-memo"><b>📝 메모</b>\n' + esc(x.memo) + '</div>' : '') +
@@ -1021,7 +1038,7 @@ dialog::backdrop { background: transparent; }
           rate(x.id, k);
           if (V.mode === 'study' && k === 0 && !V.again[x.id]) { V.again[x.id] = true; V.ids.push(x.id); }
           renderMn();
-          if (V.mode === 'study' || V.i < V.ids.length - 1) { V.i++; renderViewer('down'); }
+          if (V.mode === 'study' || V.i < V.ids.length - 1) { V.i++; V.flip = false; renderViewer('down'); }
           else { renderViewer(); toast('이 강의 마지막 단어입니다'); }
         };
       });
@@ -1037,7 +1054,7 @@ dialog::backdrop { background: transparent; }
       if (V.type === 'card' && V.mode === 'study') { V.i = n; renderViewer(); return; }
       toast(V.type === 'page' ? '이 강의 마지막 쪽입니다' : '이 강의 마지막 단어입니다'); return;
     }
-    V.i = n;
+    V.i = n; V.flip = false;
     renderViewer(step > 0 ? 'down' : 'up');
   }
   function closeViewer() { $('vdlg').close(); V = null; renderMn(); }
