@@ -8,6 +8,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#f1f3f4">
+<meta name="referrer" content="no-referrer">
 <style>
 :root {
   --bg: #f1f3f4;
@@ -170,7 +171,9 @@ dialog::backdrop { background: transparent; }
 .vimg { display: block; width: 100%; max-height: 40vh; object-fit: contain; border-radius: 10px; background: var(--bg); margin-bottom: 12px; }
 .vword { font-size: 32px; font-weight: 600; word-break: break-word; line-height: 1.2; }
 .vpron { color: var(--muted); font-size: 16px; display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-.say { display: inline-flex; align-items: center; gap: 6px; border: none; background: var(--accent-bg); color: var(--accent); border-radius: 18px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+.say:active { transform: scale(.9); filter: brightness(.85); }
+.say.on { background: var(--accent); color: var(--surface); }
+.say { transition: transform .08s; display: inline-flex; align-items: center; gap: 6px; border: none; background: var(--accent-bg); color: var(--accent); border-radius: 18px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer; }
 .vmean { font-size: 18px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; margin: 14px 0 8px; }
 .vmn { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 16px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
 .vmn b { color: var(--accent); }
@@ -1029,37 +1032,50 @@ dialog::backdrop { background: transparent; }
            vs.find(function (v) { return /^en[-_]US/i.test(v.lang); }) ||
            vs.find(function (v) { return /^en/i.test(v.lang); }) || null;
   }
-  var AUD = lsGet('jg-aud', {}), clip = null;
-  async function say(text) {
-    var w = String(text || '').trim().toLowerCase();
-    if (!w) return;
-    if (/^[a-z][a-z' -]*$/.test(w)) {
-      var url = AUD[w];
-      if (url === undefined) {
-        try {
-          var r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w));
-          url = '';
-          if (r.ok) {
-            var j = await r.json(), list = [];
-            (j || []).forEach(function (e) { (e.phonetics || []).forEach(function (ph) { if (ph.audio) list.push(ph.audio); }); });
-            url = list.find(function (a) { return /-us\.mp3/i.test(a); }) || list[0] || '';
-          }
-          AUD[w] = url; lsSet('jg-aud', AUD);
-        } catch (e) { url = ''; }
+  var AUD = lsGet('jg-aud', {}), clip = null, prepping = {};
+  function wkey(text) { var w = String(text || '').trim().toLowerCase(); return /^[a-z][a-z' -]*$/.test(w) ? w : ''; }
+  async function prepAudio(text) {
+    var w = wkey(text);
+    if (!w || AUD[w] !== undefined || prepping[w]) return;
+    prepping[w] = true;
+    try {
+      var r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w));
+      var url = '';
+      if (r.ok) {
+        var j = await r.json(), list = [];
+        (j || []).forEach(function (e) { (e.phonetics || []).forEach(function (ph) { if (ph.audio) list.push(ph.audio); }); });
+        url = list.find(function (a) { return /-us\.mp3/i.test(a); }) || list[0] || '';
       }
-      if (url) {
-        try {
-          if (clip) clip.pause();
-          clip = new Audio(url);
-          var fell = false;
-          var fb = function () { if (!fell) { fell = true; ttsSay(text); } };
-          clip.onerror = fb;
-          await clip.play();
-          return;
-        } catch (e) { ttsSay(text); return; }
-      }
-    }
-    ttsSay(text);
+      AUD[w] = url; lsSet('jg-aud', AUD);
+    } catch (e) {}
+    prepping[w] = false;
+  }
+  function sayMark(on) {
+    var b = document.getElementById('v-say');
+    if (b) b.classList.toggle('on', on);
+    clearTimeout(sayMark.t);
+    if (on) sayMark.t = setTimeout(function () { sayMark(false); }, 2500);
+  }
+  function playUrl(url, onFail) {
+    try {
+      if (clip) { clip.pause(); clip.onerror = null; }
+      clip = new Audio(url);
+      var failed = false;
+      var f = function () { if (!failed) { failed = true; onFail(); } };
+      clip.onerror = f;
+      var pr = clip.play();
+      if (pr && pr.catch) pr.catch(f);
+    } catch (e) { onFail(); }
+  }
+  function say(text) {
+    var w = wkey(text), t = String(text || '').trim();
+    if (!t) return;
+    sayMark(true);
+    var g = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=' + encodeURIComponent(t);
+    var dict = w && AUD[w];
+    if (dict) playUrl(dict, function () { playUrl(g, function () { ttsSay(t); }); });
+    else playUrl(g, function () { ttsSay(t); });
+    if (w) prepAudio(w);
   }
   function ttsSay(text, retry) {
     if (!('speechSynthesis' in window)) { toast('이 폰에서는 읽어주기를 쓸 수 없습니다'); return; }
@@ -1118,6 +1134,7 @@ dialog::backdrop { background: transparent; }
           '<button class="say" id="v-say" type="button" style="position:absolute;top:12px;right:12px"><img class="sicon" src="sing.png" alt="">다시 듣기</button>' +
           '<div class="vtap">뜻을 떠올려 본 뒤 탭하세요</div></div>' +
           '</div>';
+        prepAudio(x.title);
         $('v-say').onclick = function (e) { e.stopPropagation(); say(x.title); };
         $('v-front').onclick = function () { V.flip = true; renderViewer(); };
         if (V.spoken !== x.id + ':' + V.i) { V.spoken = x.id + ':' + V.i; say(x.title); }
@@ -1138,6 +1155,7 @@ dialog::backdrop { background: transparent; }
         '<button class="r1" data-r="1">헷갈림<small>' + d[1] + '일 뒤</small></button>' +
         '<button class="r2" data-r="2">알았음<small>' + d[2] + '일 뒤</small></button></div>' +
         '</div>';
+      prepAudio(x.title);
       if ($('v-say')) $('v-say').onclick = function () {
         if (x.title) say(x.title);
         else { toast('단어 이름이 없어서 읽을 수 없습니다. 이름을 적어 주세요'); openWordEdit(x.id); }
