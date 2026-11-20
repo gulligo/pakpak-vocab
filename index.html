@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>찌공이 단어장</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="PakPak.png">
-<link rel="apple-touch-icon" href="PakPak.png">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#f1f3f4">
 <style>
 :root {
@@ -894,7 +894,7 @@ dialog::backdrop { background: transparent; }
     au.play().catch(function () { toast('재생하지 못했습니다'); });
     if ('mediaSession' in navigator) {
       try {
-        navigator.mediaSession.metadata = new MediaMetadata({ title: label(tr), artist: '찌공이 단어장', artwork: [{ src: 'PakPak.png', sizes: '512x512', type: 'image/png' }] });
+        navigator.mediaSession.metadata = new MediaMetadata({ title: label(tr), artist: '찌공이 단어장', artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] });
       } catch (e) {}
     }
     renderPlayer();
