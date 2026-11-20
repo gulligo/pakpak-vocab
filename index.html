@@ -203,6 +203,7 @@ dialog::backdrop { background: transparent; }
 }
 .photo-slot img { display: block; width: 100%; max-height: 36vh; object-fit: contain; background: var(--bg); }
 .photo-tools { display: flex; gap: 8px; margin-top: 8px; }
+.btn, .icon.danger { white-space: nowrap; flex: none; }
 .btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 20px; padding: 8px 14px; font: inherit; font-size: 14px; cursor: pointer; }
 .btn.pri { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
 .btn.danger { color: var(--danger); }
@@ -243,6 +244,7 @@ dialog::backdrop { background: transparent; }
 .phd:first-child { margin-top: 4px; }
 .phd b { font-size: 18px; }
 .phd button { border: none; border-radius: 16px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; background: var(--accent); color: var(--surface); font-weight: 600; }
+#n-bright[hidden] { display: none; }
 .phd .pbt { display: flex; gap: 6px; }
 .phd button.rv { background: var(--danger); }
 .phd button.done { background: var(--accent-bg); color: var(--accent); font-weight: 400; }
@@ -369,7 +371,6 @@ dialog::backdrop { background: transparent; }
     </div>
     <button class="big a" id="s-page" type="button">📄 페이지 사진으로 단어 추가</button>
     <button class="big b" id="s-mp3" type="button">🎵 이 강 mp3 올리기 / 바꾸기</button>
-    <button class="big b" id="s-bright" type="button">☀️ 예전에 올린 어두운 그림 모두 밝게</button>
     <button class="big c" id="s-close" type="button">닫기</button>
   </div>
 </div>
@@ -491,7 +492,8 @@ dialog::backdrop { background: transparent; }
     <button class="icon" id="n-back" type="button" aria-label="뒤로">&#8592;</button>
     <span class="tt" id="n-title">3. 단어 이름 적기</span>
     <span class="sp"></span>
-    <button class="icon danger" id="n-del" type="button">페이지 삭제</button>
+    <button class="icon danger" id="n-del" type="button">삭제</button>
+    <button class="btn" id="n-bright" type="button">☀️ 밝게</button>
     <button class="btn pri" id="n-save" type="button">저장</button>
   </div>
   <div class="err" id="n-err"></div>
@@ -983,11 +985,7 @@ dialog::backdrop { background: transparent; }
   function readSheet() { target = { vol: Math.min(2, int($('s-vol').value, 1)), part: int($('s-part').value, 1) }; }
   $('s-page').addEventListener('click', function () { readSheet(); closeSheet(); $('pfile').value = ''; $('pfile').click(); });
   $('s-mp3').addEventListener('click', function () { readSheet(); closeSheet(); $('afile').value = ''; $('afile').click(); });
-  $('s-bright').addEventListener('click', async function () {
-    closeSheet();
-    var todo = MN.list().filter(function (x) { return (kindOf(x) === 'page' || kindOf(x) === 'word') && x.photo && !x.bright; });
-    if (!todo.length) { toast('밝게 할 예전 그림이 없습니다'); return; }
-    if (!confirm('예전에 올린 그림 ' + todo.length + '장을 밝게 바꿉니다.\n아이 폰에서도 밝은 그림으로 보입니다.\n잠시 화면을 그대로 두세요.')) return;
+  async function brightenItems(todo) {
     var done = 0, fail = 0, list = [];
     for (var i = 0; i < todo.length; i++) {
       var x = todo[i];
@@ -1006,7 +1004,7 @@ dialog::backdrop { background: transparent; }
     }
     if (list.length) await MN.putMany(list);
     toast('그림 ' + done + '장을 밝게 바꿨습니다' + (fail ? ' (실패 ' + fail + '장 — 인터넷 확인 후 다시 눌러 주세요)' : ''));
-  });
+  }
   $('afile').addEventListener('change', async function () {
     var f = $('afile').files && $('afile').files[0];
     if (!f) return;
@@ -1532,8 +1530,9 @@ dialog::backdrop { background: transparent; }
   var NM = null;
   function openNames(o) {
     NM = o; NM.armed = false;
-    $('n-title').textContent = o.edit ? '페이지 고치기' : '3. 단어 이름 적기';
-    $('n-del').hidden = !o.edit; $('n-del').textContent = '페이지 삭제';
+    $('n-title').textContent = o.edit ? '고치기' : '3. 단어 이름 적기';
+    $('n-del').hidden = !o.edit; $('n-del').textContent = '삭제';
+    $('n-bright').hidden = !o.edit;
     $('n-err').textContent = '';
     $('n-save').disabled = false; $('n-save').textContent = '저장';
     $('n-vol').value = o.vol; $('n-part').value = o.part; $('n-pno').value = o.pno;
@@ -1590,6 +1589,13 @@ dialog::backdrop { background: transparent; }
       btn.disabled = false; btn.textContent = '저장';
       $('n-err').textContent = '사진을 올리지 못했습니다. 인터넷 연결을 확인하고 다시 저장해 주세요.';
     }
+  });
+  $('n-bright').addEventListener('click', async function () {
+    if (!NM || !NM.edit) return;
+    var pg = MN.get(NM.pid);
+    var todo = (pg && pg.photo ? [pg] : []).concat(NM.words.filter(function (w) { return w.photo; }));
+    closeNames();
+    if (todo.length) await brightenItems(todo);
   });
   $('n-del').addEventListener('click', async function () {
     if (!NM || !NM.edit) return;
