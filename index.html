@@ -267,6 +267,15 @@ dialog::backdrop { background: transparent; }
 .vmemo { background: var(--r1); border-radius: 10px; padding: 10px 12px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; margin: 0 0 10px; cursor: pointer; }
 .vmemo b { color: var(--warn); }
 
+.abcb { flex: none; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); border-radius: 18px; padding: 8px 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.abh { position: sticky; top: 0; background: var(--surface); font-size: 15px; font-weight: 700; color: var(--accent); padding: 10px 2px 4px; border-bottom: 1px solid var(--border); }
+.abr { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 12px 6px; border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.abr .w { font-size: 18px; font-weight: 600; word-break: break-word; }
+.abr .l { flex: none; font-size: 12px; color: var(--muted); text-align: right; line-height: 1.4; }
+.abr.seen { background: var(--accent-bg); }
+.abr.seen .w { color: var(--accent); }
+.abr.seen .l b { color: var(--accent); font-weight: 600; }
+
 /* + 메뉴 */
 .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; display: flex; align-items: flex-end; }
 .sheet-bg[hidden] { display: none; }
@@ -304,6 +313,7 @@ dialog::backdrop { background: transparent; }
   <div class="hrow" id="h-mn">
     <button class="vol" id="volbtn" type="button">1권</button>
     <div class="pills" id="pills"></div>
+    <button class="abcb" id="abcbtn" type="button">모음</button>
     <button class="ic" id="rbtn" type="button" aria-label="내 기록 리셋" hidden style="font-size:20px">&#8634;</button>
     <button class="ic" id="sbtn" type="button" aria-label="단어 찾기">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6"/></svg>
@@ -388,6 +398,16 @@ dialog::backdrop { background: transparent; }
     <button class="icon sm" id="v-edit" type="button" aria-label="고치기">&#9998;</button>
   </div>
   <div id="vstage"></div>
+</dialog>
+
+<!-- 단어 모음 -->
+<dialog id="abdlg">
+  <div class="bar">
+    <button class="icon" id="ab-back" type="button" aria-label="닫기">&#8592;</button>
+    <span class="tt" id="ab-title">단어 모음</span>
+    <span class="sp"></span>
+  </div>
+  <div class="mf" id="ab-list"></div>
 </dialog>
 
 <!-- 메모 -->
@@ -1029,7 +1049,7 @@ dialog::backdrop { background: transparent; }
       stage.innerHTML = '<div class="vcard' + anim + '" id="vcard"><img class="vpage" alt="" src="' + esc(photoUrl(x)) + '">' +
         '</div>';
     } else {
-      $('v-title').textContent = (V.mode === 'study' ? V.label : label(x)) + ' · ' + (V.i + 1) + ' / ' + V.ids.length;
+      $('v-title').textContent = (V.label ? V.label : label(x)) + ' · ' + (V.i + 1) + ' / ' + V.ids.length;
       var r = srsOf(x.id), d = [0, 1, 2].map(function (k) { return LEVELS[nextLevel(r, k)]; });
       if (V.mode === 'study' && !V.flip && x.title) {
         stage.innerHTML = '<div class="vcard' + anim + '" id="vcard"><div class="vfront" id="v-front">' +
@@ -1088,7 +1108,40 @@ dialog::backdrop { background: transparent; }
     V.i = n; V.flip = false;
     renderViewer(step > 0 ? 'down' : 'up');
   }
-  function closeViewer() { $('vdlg').close(); V = null; renderMn(); }
+  function closeViewer() { $('vdlg').close(); V = null; renderMn(); if ($('abdlg').open) renderAbc(); }
+
+  /* ================= 단어 모음 (알파벳순) ================= */
+  function abcWords() {
+    return words().filter(function (x) { return String(x.title || '').trim(); }).sort(function (a, b) {
+      return a.title.trim().toLowerCase().localeCompare(b.title.trim().toLowerCase(), 'en') || (volOf(a) - volOf(b)) || ((a.part || 0) - (b.part || 0));
+    });
+  }
+  function renderAbc() {
+    var list = abcWords(), h = '', cur = '', none = words().length - list.length;
+    list.forEach(function (x) {
+      var c = x.title.trim().charAt(0).toUpperCase();
+      if (!/[A-Z]/.test(c)) c = '#';
+      if (c !== cur) { cur = c; h += '<div class="abh">' + c + '</div>'; }
+      var n = SEEN[x.id];
+      h += '<button class="abr' + (n ? ' seen' : '') + '" data-id="' + esc(x.id) + '" type="button"><span class="w">' + esc(x.title.trim()) +
+           '</span><span class="l">' + label(x) + (n ? '<br><b>찾아봄 ' + n + '번</b>' : '') + '</span></button>';
+    });
+    if (!list.length) h = '<div class="empty">아직 이름을 적은 단어가 없습니다.</div>';
+    if (none > 0) h += '<div class="note" style="padding:14px 4px">이름을 아직 적지 않은 칸 ' + none + '개는 모음에 나오지 않습니다.</div>';
+    $('ab-title').textContent = '단어 모음 · ' + list.length + '개';
+    $('ab-list').innerHTML = h;
+  }
+  $('abcbtn').addEventListener('click', function () { renderAbc(); $('abdlg').showModal(); $('ab-list').scrollTop = 0; });
+  $('ab-back').addEventListener('click', function () { $('abdlg').close(); renderMn(); });
+  $('abdlg').addEventListener('cancel', function (e) { e.preventDefault(); $('abdlg').close(); renderMn(); });
+  $('ab-list').addEventListener('click', function (e) {
+    var b = e.target.closest('.abr'); if (!b) return;
+    var id = b.dataset.id;
+    SEEN[id] = (SEEN[id] || 0) + 1; lsSet('jg-seen', SEEN);
+    var ids = abcWords().map(function (x) { return x.id; });
+    V = { type: 'card', mode: 'browse', label: '모음', ids: ids, i: Math.max(0, ids.indexOf(id)), again: {} };
+    $('vdlg').showModal(); renderViewer();
+  });
   $('v-back').addEventListener('click', closeViewer);
   $('vdlg').addEventListener('cancel', function (e) { e.preventDefault(); closeViewer(); });
   $('v-prev').addEventListener('click', function () { go(-1); });
