@@ -1029,7 +1029,39 @@ dialog::backdrop { background: transparent; }
            vs.find(function (v) { return /^en[-_]US/i.test(v.lang); }) ||
            vs.find(function (v) { return /^en/i.test(v.lang); }) || null;
   }
-  function say(text, retry) {
+  var AUD = lsGet('jg-aud', {}), clip = null;
+  async function say(text) {
+    var w = String(text || '').trim().toLowerCase();
+    if (!w) return;
+    if (/^[a-z][a-z' -]*$/.test(w)) {
+      var url = AUD[w];
+      if (url === undefined) {
+        try {
+          var r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w));
+          url = '';
+          if (r.ok) {
+            var j = await r.json(), list = [];
+            (j || []).forEach(function (e) { (e.phonetics || []).forEach(function (ph) { if (ph.audio) list.push(ph.audio); }); });
+            url = list.find(function (a) { return /-us\.mp3/i.test(a); }) || list[0] || '';
+          }
+          AUD[w] = url; lsSet('jg-aud', AUD);
+        } catch (e) { url = ''; }
+      }
+      if (url) {
+        try {
+          if (clip) clip.pause();
+          clip = new Audio(url);
+          var fell = false;
+          var fb = function () { if (!fell) { fell = true; ttsSay(text); } };
+          clip.onerror = fb;
+          await clip.play();
+          return;
+        } catch (e) { ttsSay(text); return; }
+      }
+    }
+    ttsSay(text);
+  }
+  function ttsSay(text, retry) {
     if (!('speechSynthesis' in window)) { toast('이 폰에서는 읽어주기를 쓸 수 없습니다'); return; }
     try {
       var ss = window.speechSynthesis, started = false, handled = false;
@@ -1043,7 +1075,7 @@ dialog::backdrop { background: transparent; }
       u.onerror = function (e) {
         if (handled || started || e.error === 'interrupted' || e.error === 'canceled') return;
         handled = true;
-        if (!retry) say(text, true);
+        if (!retry) ttsSay(text, true);
         else toast('소리가 안 나면 미디어 음량과 폰의 글자 읽어주기 설정을 확인해 주세요');
       };
       setTimeout(function () { ss.speak(u); }, 80);
@@ -1051,7 +1083,7 @@ dialog::backdrop { background: transparent; }
         if (started || handled) return;
         handled = true;
         ss.cancel();
-        if (!retry) say(text, true);
+        if (!retry) ttsSay(text, true);
         else toast('소리가 안 나면 미디어 음량과 폰의 글자 읽어주기 설정을 확인해 주세요');
       }, 2000);
     } catch (e) {}
