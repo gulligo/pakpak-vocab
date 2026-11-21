@@ -92,6 +92,9 @@ section[hidden] { display: none; }
   border-radius: 8px; padding: 8px 14px 10px; cursor: pointer;
   font: inherit; line-height: 1.5;
 }
+.card.lk { background: #fef7e0; border-color: #f9ab00; position: relative; }
+.card .lkb { position: absolute; right: 8px; top: 8px; background: #f9ab00; color: #fff; border-radius: 10px; font-size: 12px; padding: 2px 8px; line-height: 1.3; }
+.tile .pk { position: absolute; left: 4px; top: 4px; background: #f9ab00; color: #fff; border-radius: 10px; font-size: 11px; padding: 2px 7px; line-height: 1.3; }
 .card h3 { margin: 0 0 4px; font-size: 20px; font-weight: 600; word-break: break-word; }
 .card h3:empty { display: none; }
 .card .body {
@@ -753,6 +756,13 @@ dialog::backdrop { background: transparent; }
 
   /* ================= 연상단어 데이터 ================= */
   function kindOf(x) { return x.kind || 'word'; }
+  function tkey(t) { return String(t || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+  var PKSET = {};
+  function buildPkSet() { PKSET = {}; PK.list().forEach(function (w) { var k = tkey(w.title); if (k) PKSET[k] = true; }); }
+  function mnFind(title) {
+    var k = tkey(title); if (!k) return null;
+    return bookSort(words().filter(function (x) { return tkey(x.title) === k; }))[0] || null;
+  }
   function volOf(x) { return x.vol || 1; }
   function words() { return MN.list().filter(function (x) { return kindOf(x) === 'word'; }); }
   function pages() { return MN.list().filter(function (x) { return kindOf(x) === 'page'; }); }
@@ -828,7 +838,7 @@ dialog::backdrop { background: transparent; }
     var rd = !inSearch && SQ && SQ.on && SQ.src !== 'test' && SQ.ids[SQ.i] === x.id;
     return '<button class="tile' + (memo ? ' memo' : '') + (seen ? ' seen' : '') + (rd ? ' reading' : '') + '" data-id="' + esc(x.id) + '" type="button">' +
       (x.photo ? '<img loading="lazy" draggable="false" alt="' + esc(x.title || '') + '"' + ar + ' src="' + esc(photoUrl(x)) + '">' : '<span class="nm">' + esc(x.title || '') + '</span>') +
-      (memo ? '<span class="mk">📝</span>' : '') + (seen ? '<span class="sk">찾아봄 ' + SEEN[x.id] + '번</span>' : '') + '</button>';
+      (PKSET[tkey(x.title)] ? '<span class="pk">팍</span>' : '') + (memo ? '<span class="mk">📝</span>' : '') + (seen ? '<span class="sk">찾아봄 ' + SEEN[x.id] + '번</span>' : '') + '</button>';
   }
   function studyBtn(v, p) {
     var t = today(), due = 0, nw = 0;
@@ -841,6 +851,7 @@ dialog::backdrop { background: transparent; }
       '<button class="go" data-study="' + p + '" data-m="all" type="button">클카</button></span>';
   }
   function renderMn() {
+    buildPkSet();
     renderPills();
     renderPlayer();
     var listEl = $('mn-list'), em = $('mn-empty'), h = '', n = 0;
@@ -888,7 +899,7 @@ dialog::backdrop { background: transparent; }
       }
     }, 120);
   }, { passive: true });
-  MN.onchange = function () { renderMn(); if ($('vdlg').open) renderViewer(); };
+  MN.onchange = function () { renderMn(); if ($('vdlg').open) renderViewer(); if (tab === 'pak') render(); };
 
   $('volbtn').addEventListener('click', function () { vol = vol === 1 ? 2 : 1; lsSet('jg-vol', vol); $('pills').scrollLeft = 0; pendingJump = true; renderMn(); });
   $('pills').addEventListener('click', function (e) {
@@ -2015,7 +2026,17 @@ dialog::backdrop { background: transparent; }
     c.type = 'button'; c.className = 'card';
     var h = document.createElement('h3'); h.textContent = w.title; c.appendChild(h);
     var b = document.createElement('div'); b.className = 'body'; b.textContent = w.body; c.appendChild(b);
-    c.addEventListener('click', function () { openEditor(w); });
+    var m = mnFind(w.title);
+    if (!m) { c.addEventListener('click', function () { openEditor(w); }); return c; }
+    c.className = 'card lk';
+    var bd = document.createElement('span'); bd.className = 'lkb'; bd.textContent = '연상'; c.appendChild(bd);
+    // 짧게 누르면 연상단어로, 길게 누르면 고치기
+    var tm = 0, lp = false, sx = 0, sy = 0;
+    c.addEventListener('pointerdown', function (e) { lp = false; sx = e.clientX; sy = e.clientY; tm = setTimeout(function () { lp = true; openEditor(w); }, 600); });
+    c.addEventListener('pointermove', function (e) { if (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10) clearTimeout(tm); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { c.addEventListener(ev, function () { clearTimeout(tm); }); });
+    c.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    c.addEventListener('click', function () { if (lp) { lp = false; return; } goWord(mnFind(w.title)); });
     return c;
   }
   function render() {
@@ -2029,7 +2050,14 @@ dialog::backdrop { background: transparent; }
       emptyEl.textContent = words.length ? '검색 결과가 없습니다.' : '메모가 없습니다.\n오른쪽 아래 + 버튼으로 추가하세요.';
     } else { emptyEl.hidden = true; }
   }
-  PK.onchange = render;
+  PK.onchange = function () { render(); if (tab === 'mn') renderMn(); };
+  function goWord(x) {
+    if (!x) return;
+    if (vol !== volOf(x)) { vol = volOf(x); lsSet('jg-vol', vol); }
+    if (x.part) setSel(x.part);
+    setTab('mn'); renderMn();
+    focusTile(x.id);
+  }
 
   function grow() {
     var t = $('f-body');
