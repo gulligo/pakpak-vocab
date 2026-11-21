@@ -280,6 +280,24 @@ dialog::backdrop { background: transparent; }
 .abr.seen .w { color: var(--accent); }
 .abr.seen .l b { color: var(--accent); font-weight: 600; }
 
+.star { border: 1px solid var(--warn); background: transparent; color: var(--warn); border-radius: 18px; padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.star.on { background: var(--warn); color: #fff; }
+.btn.on { background: var(--warn); color: #fff; border-color: var(--warn); }
+.abr .hs { color: var(--warn); margin-left: 6px; }
+.tbar { display: flex; background: var(--accent-bg); }
+.tbar button { flex: 1; border: none; background: transparent; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; padding: 12px 0; cursor: pointer; }
+.tbar button.on { background: var(--accent); color: var(--surface); }
+.trow { display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 36px; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.trow.cur { background: var(--r1); }
+.tn { width: 34px; height: 30px; border-radius: 8px; background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+.tw, .tm { min-height: 44px; border: none; border-radius: 8px; background: transparent; color: var(--text); font: inherit; cursor: pointer; padding: 6px; text-align: center; word-break: break-word; }
+.tw { font-size: 19px; font-weight: 600; }
+.tm { font-size: 15px; color: var(--muted); }
+.tm img { max-height: 54px; max-width: 100%; border-radius: 4px; vertical-align: middle; }
+.tw.hid, .tm.hid { background: var(--bg); color: transparent; border: 1px dashed var(--border); }
+.tw.hid img, .tm.hid img { visibility: hidden; }
+.ts { border: none; background: transparent; color: var(--warn); font-size: 20px; cursor: pointer; padding: 0; }
+
 /* + 메뉴 */
 .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; display: flex; align-items: flex-end; }
 .sheet-bg[hidden] { display: none; }
@@ -410,8 +428,28 @@ dialog::backdrop { background: transparent; }
     <button class="icon" id="ab-back" type="button" aria-label="닫기">&#8592;</button>
     <span class="tt" id="ab-title">단어 모음</span>
     <span class="sp"></span>
+    <button class="btn" id="ab-hard" type="button">⭐만</button>
+    <button class="btn pri" id="ab-test" type="button">테스트</button>
   </div>
   <div class="mf" id="ab-list"></div>
+</dialog>
+
+<!-- 테스트 -->
+<dialog id="tdlg">
+  <div class="bar">
+    <button class="icon" id="t-back" type="button" aria-label="닫기">&#8592;</button>
+    <span class="tt" id="t-title">테스트</span>
+    <span class="sp"></span>
+    <button class="btn" id="t-hard" type="button">⭐만</button>
+    <button class="btn pri" id="t-play" type="button">▶ 발음</button>
+  </div>
+  <div class="tbar">
+    <button type="button" id="t-hide">전체 가림</button>
+    <button type="button" id="t-show">전체 보임</button>
+    <button type="button" id="t-mode">단어 가림</button>
+    <button type="button" id="t-mix">섞기</button>
+  </div>
+  <div class="mf" id="t-list" style="padding:0"></div>
 </dialog>
 
 <!-- 메모 -->
@@ -447,6 +485,8 @@ dialog::backdrop { background: transparent; }
     <img class="vword-img" id="e-img" alt="" hidden>
     <label>단어</label>
     <input id="f-word" autocomplete="off" autocapitalize="none">
+    <label>뜻</label>
+    <input id="f-wmean" autocomplete="off" placeholder="중심, 핵심">
     <label>발음기호 (선택)</label>
     <input id="f-pron" autocomplete="off" autocapitalize="none" placeholder="[kɔːr]">
   </div>
@@ -730,6 +770,8 @@ dialog::backdrop { background: transparent; }
     }
   }
   var SEEN = lsGet('jg-seen', {});
+  var HARD = lsGet('jg-hard', {});
+  function toggleHard(id) { if (HARD[id]) delete HARD[id]; else HARD[id] = 1; lsSet('jg-hard', HARD); return !!HARD[id]; }
   function tileHtml(x, inSearch) {
     var memo = String(x.memo || '').trim(), seen = inSearch && SEEN[x.id];
     var ar = x.sw && x.sh ? ' style="aspect-ratio:' + x.sw + ' / ' + x.sh + '"' : '';
@@ -825,10 +867,11 @@ dialog::backdrop { background: transparent; }
   $('rbtn').hidden = localStorage.getItem('jg-owner') !== '1';
   $('rbtn').addEventListener('click', async function () {
     var mine = words().filter(function (x) { return x.memoBy === DEVICE && String(x.memo || '').trim(); });
-    var msg = '이 폰에서 한 것만 지웁니다.\n\n· 외우기 기록\n· 찾아봄 표시\n· 이 폰에서 쓴 메모 ' + mine.length + '개\n\n페이지·단어·mp3와 아이가 쓴 메모는 그대로입니다. 리셋할까요?';
+    var msg = '이 폰에서 한 것만 지웁니다.\n\n· 외우기 기록\n· 찾아봄 표시\n· 어려운 단어 ⭐ 표시\n· 이 폰에서 쓴 메모 ' + mine.length + '개\n\n페이지·단어·mp3와 아이가 쓴 메모는 그대로입니다. 리셋할까요?';
     if (!confirm(msg)) return;
     SRS = {}; lsSet('jg-srs', SRS);
     SEEN = {}; lsSet('jg-seen', SEEN);
+    HARD = {}; lsSet('jg-hard', HARD);
     if (mine.length) {
       await MN.putMany(mine.map(function (x) { var n = Object.assign({}, x, { memo: '' }); delete n.memoBy; return n; }));
     }
@@ -1167,7 +1210,8 @@ dialog::backdrop { background: transparent; }
         (x.photo ? '<img class="vword-img" alt="" src="' + esc(photoUrl(x)) + '">' : '') +
         (String(x.memo || '').trim() ? '<div class="vmemo" id="v-memo"><b>📝 메모</b>\n' + esc(x.memo) + '</div>' : '') +
         '<div class="vpron" style="justify-content:space-between"><span class="vword" style="font-size:26px;color:var(--text)">' + esc(x.title || '') + '</span>' +
-        '<button class="say" id="v-say" type="button"><img class="sicon" src="sing.png" alt="">발음</button></div>' +
+        '<span style="display:flex;gap:6px"><button class="star' + (HARD[x.id] ? ' on' : '') + '" id="v-star" type="button">' + (HARD[x.id] ? '★ 어려움' : '☆ 어려움') + '</button>' +
+        '<button class="say" id="v-say" type="button"><img class="sicon" src="sing.png" alt="">발음</button></span></div>' +
         (x.pron ? '<div class="vpron">' + esc(x.pron) + '</div>' : '') +
         (x.mean ? '<div class="vmean">' + esc(x.mean) + '</div>' : '') +
         (x.mn ? '<div class="vmn">' + mnHtml(x.mn) + '</div>' : '') +
@@ -1182,6 +1226,10 @@ dialog::backdrop { background: transparent; }
         else { toast('단어 이름이 없어서 읽을 수 없습니다. 이름을 적어 주세요'); openWordEdit(x.id); }
       };
       if ($('v-memo')) $('v-memo').onclick = function () { openMemo(x.id); };
+      if ($('v-star')) $('v-star').onclick = function () {
+        var on = toggleHard(x.id), b = $('v-star');
+        b.classList.toggle('on', on); b.textContent = on ? '★ 어려움' : '☆ 어려움';
+      };
       stage.querySelectorAll('.rate button').forEach(function (b) {
         b.onclick = function () {
           var k = Number(b.dataset.r);
@@ -1215,29 +1263,109 @@ dialog::backdrop { background: transparent; }
       return a.title.trim().toLowerCase().localeCompare(b.title.trim().toLowerCase(), 'en') || (volOf(a) - volOf(b)) || ((a.part || 0) - (b.part || 0));
     });
   }
+  var abHard = false;
   function renderAbc() {
     var list = abcWords(), h = '', cur = '', none = words().length - list.length;
+    if (abHard) list = list.filter(function (x) { return HARD[x.id]; });
+    $('ab-hard').classList.toggle('on', abHard);
     list.forEach(function (x) {
       var c = x.title.trim().charAt(0).toUpperCase();
       if (!/[A-Z]/.test(c)) c = '#';
       if (c !== cur) { cur = c; h += '<div class="abh">' + c + '</div>'; }
       var n = SEEN[x.id];
-      h += '<button class="abr' + (n ? ' seen' : '') + '" data-id="' + esc(x.id) + '" type="button"><span class="w">' + esc(x.title.trim()) +
+      h += '<button class="abr' + (n ? ' seen' : '') + '" data-id="' + esc(x.id) + '" type="button"><span class="w">' + esc(x.title.trim()) + (HARD[x.id] ? '<span class="hs">★</span>' : '') +
            '</span><span class="l">' + label(x) + (n ? '<br><b>찾아봄 ' + n + '번</b>' : '') + '</span></button>';
     });
-    if (!list.length) h = '<div class="empty">아직 이름을 적은 단어가 없습니다.</div>';
+    if (!list.length) h = '<div class="empty">' + (abHard ? '⭐ 어려운 단어로 표시한 단어가 없습니다.\n카드에서 ☆ 어려움을 누르면 여기에 모입니다.' : '아직 이름을 적은 단어가 없습니다.') + '</div>';
     if (none > 0) h += '<div class="note" style="padding:14px 4px">이름을 아직 적지 않은 칸 ' + none + '개는 모음에 나오지 않습니다.</div>';
     $('ab-title').textContent = '단어 모음 · ' + list.length + '개';
     $('ab-list').innerHTML = h;
   }
   $('abcbtn').addEventListener('click', function () { renderAbc(); $('abdlg').showModal(); $('ab-list').scrollTop = 0; });
   $('ab-back').addEventListener('click', function () { $('abdlg').close(); renderMn(); });
+  $('ab-hard').addEventListener('click', function () { abHard = !abHard; renderAbc(); $('ab-list').scrollTop = 0; });
+  $('ab-test').addEventListener('click', function () { openTest(abHard); });
+
+  /* ================= 테스트 ================= */
+  var T = null;
+  function openTest(hardOnly) {
+    T = { hard: !!hardOnly, mode: 'word', hidden: {}, order: null, playing: false, pi: -1 };
+    buildTest();
+    $('tdlg').showModal();
+    $('t-list').scrollTop = 0;
+  }
+  function testIds() {
+    var ids = abcWords().filter(function (x) { return !T.hard || HARD[x.id]; }).map(function (x) { return x.id; });
+    if (T.order) ids = T.order.filter(function (id) { return ids.indexOf(id) >= 0; });
+    return ids;
+  }
+  function buildTest() {
+    var ids = testIds(), h = '';
+    $('t-title').textContent = (T.hard ? '⭐ 테스트 · ' : '테스트 · ') + ids.length;
+    $('t-hard').classList.toggle('on', T.hard);
+    $('t-mode').textContent = T.mode === 'word' ? '단어 가림' : '뜻 가림';
+    $('t-play').textContent = T.playing ? '■ 멈춤' : '▶ 발음';
+    ids.forEach(function (id, i) {
+      var x = MN.get(id); if (!x) return;
+      var hid = !!T.hidden[id];
+      var wh = hid && T.mode === 'word', mh = hid && T.mode === 'mean';
+      var mean = String(x.mean || '').trim();
+      h += '<div class="trow' + (T.pi === i ? ' cur' : '') + '" data-id="' + esc(id) + '" data-i="' + i + '"><span class="tn">' + (i + 1) + '</span>' +
+           '<button class="tw' + (wh ? ' hid' : '') + '" type="button">' + esc(x.title.trim()) + '</button>' +
+           '<button class="tm' + (mh ? ' hid' : '') + '" type="button">' + (mean ? esc(mean) : (x.photo ? '<img alt="" loading="lazy" src="' + esc(photoUrl(x)) + '">' : '')) + '</button>' +
+           '<button class="ts" type="button" aria-label="어려운 단어">' + (HARD[id] ? '★' : '☆') + '</button></div>';
+    });
+    if (!ids.length) h = '<div class="empty">' + (T.hard ? '⭐ 어려운 단어로 표시한 단어가 없습니다.' : '테스트할 단어가 없습니다.') + '</div>';
+    $('t-list').innerHTML = h;
+  }
+  function stopPlay() { T && (T.playing = false); clearTimeout(stopPlay.t); if (T) { T.pi = -1; } }
+  function playFrom(i) {
+    if (!T || !T.playing) return;
+    var ids = testIds();
+    if (i >= ids.length) { stopPlay(); buildTest(); return; }
+    T.pi = i; buildTest();
+    var row = $('t-list').querySelector('.trow[data-i="' + i + '"]');
+    if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    var x = MN.get(ids[i]);
+    if (x) say(x.title);
+    stopPlay.t = setTimeout(function () { playFrom(i + 1); }, 2300);
+  }
+  $('t-list').addEventListener('click', function (e) {
+    var row = e.target.closest('.trow'); if (!row) return;
+    var id = row.dataset.id, x = MN.get(id); if (!x) return;
+    if (e.target.closest('.ts')) { toggleHard(id); buildTest(); return; }
+    var w = e.target.closest('.tw'), m = e.target.closest('.tm');
+    if (w) {
+      if (w.classList.contains('hid')) { delete T.hidden[id]; buildTest(); }
+      say(x.title);
+    } else if (m) {
+      if (m.classList.contains('hid')) delete T.hidden[id];
+      else if (T.mode === 'mean') T.hidden[id] = 1;
+      buildTest();
+    }
+  });
+  $('t-hide').addEventListener('click', function () { T.hidden = {}; testIds().forEach(function (id) { T.hidden[id] = 1; }); buildTest(); });
+  $('t-show').addEventListener('click', function () { T.hidden = {}; buildTest(); });
+  $('t-mode').addEventListener('click', function () { T.mode = T.mode === 'word' ? 'mean' : 'word'; buildTest(); });
+  $('t-mix').addEventListener('click', function () {
+    var ids = testIds();
+    for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
+    T.order = ids; stopPlay(); buildTest(); $('t-list').scrollTop = 0;
+  });
+  $('t-hard').addEventListener('click', function () { T.hard = !T.hard; stopPlay(); buildTest(); $('t-list').scrollTop = 0; });
+  $('t-play').addEventListener('click', function () {
+    if (T.playing) { stopPlay(); buildTest(); return; }
+    T.playing = true; playFrom(0);
+  });
+  function closeTest() { stopPlay(); $('tdlg').close(); T = null; if ($('abdlg').open) renderAbc(); }
+  $('t-back').addEventListener('click', closeTest);
+  $('tdlg').addEventListener('cancel', function (e) { e.preventDefault(); closeTest(); });
   $('abdlg').addEventListener('cancel', function (e) { e.preventDefault(); $('abdlg').close(); renderMn(); });
   $('ab-list').addEventListener('click', function (e) {
     var b = e.target.closest('.abr'); if (!b) return;
     var id = b.dataset.id;
     SEEN[id] = (SEEN[id] || 0) + 1; lsSet('jg-seen', SEEN);
-    var ids = abcWords().map(function (x) { return x.id; });
+    var ids = abcWords().filter(function (x) { return !abHard || HARD[x.id]; }).map(function (x) { return x.id; });
     V = { type: 'card', mode: 'browse', label: '모음', ids: ids, i: Math.max(0, ids.indexOf(id)), again: {} };
     $('vdlg').showModal(); renderViewer();
   });
@@ -1273,6 +1401,7 @@ dialog::backdrop { background: transparent; }
     EW = { id: id, armed: false };
     $('f-word').value = w.title || '';
     $('f-pron').value = w.pron || '';
+    $('f-wmean').value = w.mean || '';
     $('e-err').textContent = '';
     $('e-del').textContent = '삭제';
     var img = $('e-img');
@@ -1286,7 +1415,7 @@ dialog::backdrop { background: transparent; }
     var title = $('f-word').value.trim();
     if (!title) { $('e-err').textContent = '단어를 입력해 주세요.'; return; }
     $('edlg').close();
-    await MN.put(Object.assign({}, w, { title: title, pron: $('f-pron').value.trim() }));
+    await MN.put(Object.assign({}, w, { title: title, pron: $('f-pron').value.trim(), mean: $('f-wmean').value.trim() }));
   });
   $('e-del').addEventListener('click', async function () {
     if (!EW.armed) { EW.armed = true; $('e-del').textContent = '정말 삭제'; return; }
@@ -1588,9 +1717,10 @@ dialog::backdrop { background: transparent; }
     var h = '';
     for (var i = 0; i < (o.edit ? o.words.length : o.slots.length); i++) {
       var src = o.edit ? (o.words[i].photo ? photoUrl(o.words[i]) : '') : o.slots[i].toDataURL('image/jpeg', 0.7);
-      var val = o.edit ? (o.words[i].title || '') : '';
+      var val = o.edit ? (o.words[i].title || '') : '', mv = o.edit ? (o.words[i].mean || '') : '';
       h += '<div class="nrow"><img alt="" src="' + esc(src) + '"><div class="nf"><span>' + (i + 1) + '번 단어</span>' +
-           '<input class="nin" data-i="' + i + '" value="' + esc(val) + '" autocomplete="off" autocapitalize="none" placeholder="영어 단어"></div></div>';
+           '<input class="nin" data-i="' + i + '" value="' + esc(val) + '" autocomplete="off" autocapitalize="none" placeholder="영어 단어">' +
+           '<input class="nmean" data-i="' + i + '" value="' + esc(mv) + '" autocomplete="off" placeholder="뜻 (예: 중심, 핵심)" style="margin-top:6px;font-size:15px"></div></div>';
     }
     $('n-list').innerHTML = h;
     $('ndlg').showModal();
@@ -1609,11 +1739,12 @@ dialog::backdrop { background: transparent; }
     var v = Math.min(2, int($('n-vol').value, 0)), p = int($('n-part').value, 0), pno = int($('n-pno').value, 0);
     if (!v || !p || !pno) { $('n-err').textContent = '권, 강, 쪽 번호를 입력해 주세요.'; return; }
     var names = Array.prototype.map.call(document.querySelectorAll('#n-list .nin'), function (el) { return el.value.trim(); });
+    var means = Array.prototype.map.call(document.querySelectorAll('#n-list .nmean'), function (el) { return el.value.trim(); });
     var btn = $('n-save'); btn.disabled = true;
     try {
       if (NM.edit) {
         var pg = MN.get(NM.pid), list = [Object.assign({}, pg, { vol: v, part: p, pno: pno })];
-        NM.words.forEach(function (w, i) { list.push(Object.assign({}, w, { vol: v, part: p, pno: pno, title: names[i] || '' })); });
+        NM.words.forEach(function (w, i) { list.push(Object.assign({}, w, { vol: v, part: p, pno: pno, title: names[i] || '', mean: means[i] || '' })); });
         closeNames();
         await MN.putMany(list);
         return;
@@ -1627,7 +1758,7 @@ dialog::backdrop { background: transparent; }
         var wid = newId('w');
         await upload(wid, await toBlob(NM.slots[i], 1100), 'image/jpeg');
         btn.textContent = '올리는 중 ' + (++done) + '/' + total;
-        items.push({ id: wid, kind: 'word', vol: v, part: p, pno: pno, ord: i + 1, slot: i, pageId: pid, title: names[i] || '', photo: true, pv: 1, sw: NM.slots[i].width, sh: NM.slots[i].height, created: now + i + 1 });
+        items.push({ id: wid, kind: 'word', vol: v, part: p, pno: pno, ord: i + 1, slot: i, pageId: pid, title: names[i] || '', mean: means[i] || '', photo: true, pv: 1, sw: NM.slots[i].width, sh: NM.slots[i].height, created: now + i + 1 });
       }
       var cnt = names.filter(Boolean).length;
       closeNames();
