@@ -298,6 +298,9 @@ dialog::backdrop { background: transparent; }
 .tm img { max-height: 54px; max-width: 100%; border-radius: 4px; vertical-align: middle; }
 .tw.hid, .tm.hid { background: var(--bg); color: transparent; border: 1px dashed var(--border); }
 .tw.hid img, .tm.hid img { visibility: hidden; }
+.tset { display: flex; gap: 14px; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.tset select { height: 32px; box-shadow: none; border: 1px solid var(--border); font-size: 13px; padding: 0 6px; max-width: none; }
+.tile.flash { outline: 3px solid var(--warn); outline-offset: 2px; }
 .tscore { font-size: 13px; color: var(--muted); padding: 6px 14px; border-bottom: 1px solid var(--border); }
 .tscore:empty { display: none; }
 .tgrade { grid-column: 2 / 5; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); padding: 2px 0 4px; }
@@ -468,6 +471,10 @@ dialog::backdrop { background: transparent; }
   <div class="tbar">
     <div class="tg1"><button type="button" id="t-show">전체 보임</button><button type="button" id="t-hw">단어 가림</button></div>
     <div class="tg2"><button type="button" id="t-hm">뜻 가림</button><button type="button" id="t-mix">섞기</button></div>
+  </div>
+  <div class="tset">
+    <label>반복 <select id="t-rep"><option value="1">1번</option><option value="2">2번</option><option value="3">3번</option><option value="5">5번</option></select></label>
+    <label>순서 <select id="t-ord"><option value="ek">영어 → 뜻</option><option value="ke">뜻 → 영어</option><option value="e">영어만</option></select></label>
   </div>
   <div class="tscore" id="t-score"></div>
   <div class="mf" id="t-list" style="padding:0"></div>
@@ -965,13 +972,14 @@ dialog::backdrop { background: transparent; }
       if (v.trim()) nw.memoBy = DEVICE; else delete nw.memoBy;
       await MN.put(nw);
     }
+    afterEdit(id);
     return id;
   }
   $('mm-save').addEventListener('click', saveMemo);
   $('mm-back').addEventListener('click', saveMemo);
   $('mmdlg').addEventListener('cancel', function (e) { e.preventDefault(); saveMemo(); });
   $('mm-word').addEventListener('click', async function () { var id = await saveMemo(); if (id) openWordEdit(id); });
-  $('mm-page').addEventListener('click', async function () { var id = await saveMemo(); var w = id && MN.get(id); if (w && w.pageId) openPageEdit(w.pageId); });
+  $('mm-page').addEventListener('click', async function () { var id = await saveMemo(); var w = id && MN.get(id); if (w && w.pageId) openPageEdit(w.pageId, w.id); });
 
   /* ================= mp3 플레이어 ================= */
   var au = $('au'), curTrack = null, seeking = false;
@@ -1049,7 +1057,7 @@ dialog::backdrop { background: transparent; }
     try {
       navigator.mediaSession.setActionHandler('play', function () { if (SQ.on || (SQ.el.src && SQ.el.paused && !curTrack)) { SQ.on = true; SQ.el.play(); } else au.play(); });
       navigator.mediaSession.setActionHandler('pause', function () { if (SQ.on) { SQ.el.pause(); SQ.on = false; if (T) buildTest(); } else au.pause(); });
-      navigator.mediaSession.setActionHandler('nexttrack', function () { if (SQ.on) { SQ.step = 1; seqNext(); return; } var nx = curTrack && nextOf(curTrack); if (nx) playTrack(nx); });
+      navigator.mediaSession.setActionHandler('nexttrack', function () { if (SQ.on) { seqNextWord(); return; } var nx = curTrack && nextOf(curTrack); if (nx) playTrack(nx); });
       navigator.mediaSession.setActionHandler('previoustrack', function () {
         if (au.currentTime > 5) { au.currentTime = 0; return; }
         var pv = curTrack && prevOf(curTrack); if (pv) playTrack(pv); else au.currentTime = 0;
@@ -1140,7 +1148,8 @@ dialog::backdrop { background: transparent; }
     if (on) sayMark.t = setTimeout(function () { sayMark(false); }, 2500);
   }
   var AC = {};
-  function gUrl(t) { return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=' + encodeURIComponent(t); }
+  function ttsUrl(l, t) { return API + '/tts?l=' + l + '&q=' + encodeURIComponent(String(t || '').trim().slice(0, 80)); }
+  function gUrl(t) { return ttsUrl('en', t); }
   function audioFor(t, skipDict) {
     var key = t.toLowerCase(), w = wkey(t);
     var url = (!skipDict && w && AUD[w]) || gUrl(t);
@@ -1295,7 +1304,28 @@ dialog::backdrop { background: transparent; }
     V.i = n; V.flip = false;
     renderViewer(step > 0 ? 'down' : 'up');
   }
-  function closeViewer() { $('vdlg').close(); V = null; renderMn(); if ($('abdlg').open) renderAbc(); }
+  var focusId = null;
+  function focusTile(id) {
+    if (!id) return;
+    var go = function (smooth) {
+      if (tab !== 'mn' || searching) return;
+      var t = $('mn-list').querySelector('.tile[data-id="' + id + '"]');
+      if (!t) return;
+      var r = t.getBoundingClientRect(), hh = document.querySelector('header').offsetHeight;
+      if (r.top < hh || r.bottom > window.innerHeight) window.scrollTo({ top: window.scrollY + r.top - hh - 60, behavior: smooth ? 'smooth' : 'auto' });
+      t.classList.add('flash');
+      clearTimeout(focusTile.t); focusTile.t = setTimeout(function () { var f = $('mn-list').querySelector('.tile.flash'); if (f) f.classList.remove('flash'); }, 1800);
+    };
+    setTimeout(function () { go(false); }, 60);
+    setTimeout(function () { go(false); }, 700);
+  }
+  function afterEdit(id) { focusId = id; if (!document.querySelector('dialog[open]')) { renderMn(); focusTile(id); } }
+  function closeViewer() {
+    var cur = V && V.ids && V.ids[V.i];
+    $('vdlg').close(); V = null; renderMn(); if ($('abdlg').open) renderAbc();
+    if (cur && !$('abdlg').open) focusTile(focusId || cur);
+    focusId = null;
+  }
 
   /* ================= 단어 모음 (알파벳순) ================= */
   function abcWords() {
@@ -1398,32 +1428,43 @@ dialog::backdrop { background: transparent; }
   $('t-mix').addEventListener('click', function () {
     var ids = testIds();
     for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
-    T.order = ids; buildTest(); $('t-list').scrollTop = 0;
+    T.order = ids; buildTest(); $('t-list').scrollTop = 0; seqSync();
   });
   $('t-count').addEventListener('change', function () {
     T.count = Number($('t-count').value) || 0; lsSet('jg-tcount', T.count);
-    T.res = {}; T.revW = {}; T.revM = {}; sampleIds(); buildTest(); $('t-list').scrollTop = 0;
+    T.res = {}; T.revW = {}; T.revM = {}; sampleIds(); buildTest(); $('t-list').scrollTop = 0; seqSync();
   });
-  $('t-hard').addEventListener('click', function () { T.hard = !T.hard; T.res = {}; T.revW = {}; T.revM = {}; sampleIds(); buildTest(); $('t-list').scrollTop = 0; });
+  $('t-hard').addEventListener('click', function () { T.hard = !T.hard; T.res = {}; T.revW = {}; T.revM = {}; sampleIds(); buildTest(); $('t-list').scrollTop = 0; seqSync(); });
   $('t-play').addEventListener('click', function () {
-    if (SQ.on) seqStop(); else seqStart(T.hard);
+    if (SQ.on) seqStop(); else seqStart(testIds());
     buildTest();
   });
   function closeTest() { $('tdlg').close(); T = null; if ($('abdlg').open) renderAbc(); }
 
-  /* ================= 연속 듣기 (단어 + 뜻, 끝없이 반복) ================= */
-  var SQ = { on: false, hard: false, ids: [], i: 0, step: 0, fails: 0, el: new Audio() };
+  /* ================= 연속 듣기 (반복 횟수 · 순서, 끝없이 반복) ================= */
+  var SQ = { on: false, ids: [], i: 0, step: 0, rep: 0, fails: 0, el: new Audio(),
+             reps: lsGet('jg-sq-rep', 1), ord: lsGet('jg-sq-ord', 'ek') };
   SQ.el.preload = 'auto';
-  function seqUrl(x, step) {
-    if (step === 0) { var w = wkey(x.title); return (w && AUD[w]) || gUrl(x.title.trim()); }
-    return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ko&q=' + encodeURIComponent(String(x.mean || '').trim());
+  $('t-rep').value = String(SQ.reps);
+  $('t-ord').value = SQ.ord;
+  $('t-rep').addEventListener('change', function () { SQ.reps = Number($('t-rep').value) || 1; lsSet('jg-sq-rep', SQ.reps); });
+  $('t-ord').addEventListener('change', function () { SQ.ord = $('t-ord').value; lsSet('jg-sq-ord', SQ.ord); SQ.step = 0; });
+  function seqParts(x) {
+    var hasM = !!String(x.mean || '').trim();
+    if (SQ.ord === 'e' || !hasM) return ['en'];
+    return SQ.ord === 'ke' ? ['ko', 'en'] : ['en', 'ko'];
   }
-  function seqStart(hard) {
-    SQ.hard = !!hard; SQ.ids = poolIds(SQ.hard);
-    if (!SQ.ids.length) { toast(SQ.hard ? '⭐ 어려운 단어가 없습니다' : '읽을 단어가 없습니다'); return; }
+  function seqUrl(x, part) {
+    if (part === 'en') { var w = wkey(x.title); return (w && AUD[w]) || ttsUrl('en', x.title); }
+    return ttsUrl('ko', x.mean);
+  }
+  function seqStart(ids) {
+    SQ.ids = (ids || []).filter(function (id) { var x = MN.get(id); return x && String(x.title || '').trim(); });
+    if (!SQ.ids.length) { toast('읽을 단어가 없습니다'); return; }
     try { au.pause(); } catch (e) {}
     try { if (clip) clip.pause(); } catch (e) {}
-    SQ.on = true; SQ.i = 0; SQ.step = 0; SQ.fails = 0;
+    SQ.ids.forEach(function (id) { var x = MN.get(id); if (x) prepAudio(x.title); });
+    SQ.on = true; SQ.i = 0; SQ.step = 0; SQ.rep = 0; SQ.fails = 0;
     seqPlay();
   }
   function seqStop() { SQ.on = false; try { SQ.el.pause(); } catch (e) {} if (T) buildTest(); }
@@ -1431,35 +1472,44 @@ dialog::backdrop { background: transparent; }
     if (!SQ.on) return;
     if (!SQ.ids.length) { seqStop(); return; }
     var x = MN.get(SQ.ids[SQ.i]);
-    if (!x || !String(x.title || '').trim()) { seqNext(true); return; }
-    if (SQ.step === 1 && !String(x.mean || '').trim()) { seqNext(); return; }
-    SQ.el.src = seqUrl(x, SQ.step);
+    if (!x || !String(x.title || '').trim()) { seqNextWord(); return; }
+    var parts = seqParts(x);
+    if (SQ.step >= parts.length) SQ.step = 0;
+    SQ.el.src = seqUrl(x, parts[SQ.step]);
     var pr = SQ.el.play();
     if (pr && pr.catch) pr.catch(function (e) { if (e && e.name === 'AbortError') return; seqFail(); });
     if ('mediaSession' in navigator) {
-      try { navigator.mediaSession.metadata = new MediaMetadata({ title: x.title.trim(), artist: String(x.mean || '') || '찌공이 단어장', album: SQ.hard ? '⭐ 어려운 단어' : '전체 단어', artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] }); } catch (e) {}
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: x.title.trim(), artist: String(x.mean || '') || '찌공이 단어장', album: '찌공이 단어장 · ' + (SQ.i + 1) + '/' + SQ.ids.length, artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] }); } catch (e) {}
     }
-    if (T && $('tdlg').open) {
+    if (T && $('tdlg').open && SQ.step === 0 && SQ.rep === 0) {
       buildTest();
       var row = $('t-list').querySelector('.trow[data-id="' + SQ.ids[SQ.i] + '"]');
-      if (row && SQ.step === 0) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
   }
-  function seqNext(skipMean) {
-    if (SQ.step === 0 && !skipMean) SQ.step = 1;
-    else {
-      SQ.step = 0; SQ.i++;
-      if (SQ.i >= SQ.ids.length) { SQ.i = 0; SQ.ids = poolIds(SQ.hard); }
+  function seqNextWord() {
+    SQ.step = 0; SQ.rep = 0; SQ.i++;
+    if (SQ.i >= SQ.ids.length) SQ.i = 0;
+    seqPlay();
+  }
+  function seqNext() {
+    var x = MN.get(SQ.ids[SQ.i]);
+    var parts = x ? seqParts(x) : ['en'];
+    SQ.step++;
+    if (SQ.step >= parts.length) {
+      SQ.step = 0; SQ.rep++;
+      if (SQ.rep >= SQ.reps) { seqNextWord(); return; }
     }
     seqPlay();
   }
   function seqFail() {
-    if (++SQ.fails > 6) { seqStop(); toast('읽어 주기를 할 수 없습니다. 인터넷 연결을 확인해 주세요'); return; }
+    if (++SQ.fails > Math.max(8, SQ.ids.length * 3)) { seqStop(); toast('읽어 주기를 할 수 없습니다. 인터넷 연결을 확인해 주세요'); return; }
     seqNext();
   }
   SQ.el.addEventListener('ended', function () { if (!SQ.on) return; SQ.fails = 0; seqNext(); });
   SQ.el.addEventListener('error', function () { if (SQ.on) seqFail(); });
   au.addEventListener('play', function () { if (SQ.on) seqStop(); });
+  function seqSync() { if (SQ.on && T) { SQ.ids = testIds(); SQ.i = 0; SQ.step = 0; SQ.rep = 0; seqPlay(); } }
   $('t-back').addEventListener('click', closeTest);
   $('tdlg').addEventListener('cancel', function (e) { e.preventDefault(); closeTest(); });
   $('abdlg').addEventListener('cancel', function (e) { e.preventDefault(); $('abdlg').close(); renderMn(); });
@@ -1510,7 +1560,7 @@ dialog::backdrop { background: transparent; }
     if (w.photo) { img.src = photoUrl(w); img.hidden = false; } else img.hidden = true;
     $('edlg').showModal();
   }
-  $('e-back').addEventListener('click', function () { $('edlg').close(); });
+  $('e-back').addEventListener('click', function () { $('edlg').close(); if (EW) afterEdit(EW.id); });
   $('edlg').addEventListener('cancel', function (e) { e.preventDefault(); $('edlg').close(); });
   $('e-save').addEventListener('click', async function () {
     var w = MN.get(EW.id); if (!w) { $('edlg').close(); return; }
@@ -1518,6 +1568,7 @@ dialog::backdrop { background: transparent; }
     if (!title) { $('e-err').textContent = '단어를 입력해 주세요.'; return; }
     $('edlg').close();
     await MN.put(Object.assign({}, w, { title: title, pron: $('f-pron').value.trim(), mean: $('f-wmean').value.trim() }));
+    afterEdit(w.id);
   });
   $('e-del').addEventListener('click', async function () {
     if (!EW.armed) { EW.armed = true; $('e-del').textContent = '정말 삭제'; return; }
@@ -1828,13 +1879,13 @@ dialog::backdrop { background: transparent; }
     $('ndlg').showModal();
     $('ndlg').querySelector('.mf').scrollTop = 0;
   }
-  function openPageEdit(pid) {
+  function openPageEdit(pid, focus) {
     var pg = MN.get(pid); if (!pg) return;
     var ws = MN.list().filter(function (x) { return kindOf(x) === 'word' && x.pageId === pid; })
       .sort(function (a, b) { return (a.slot || 0) - (b.slot || 0); });
-    openNames({ edit: true, pid: pid, words: ws, vol: volOf(pg), part: pg.part, pno: pg.pno || 1 });
+    openNames({ edit: true, pid: pid, focus: focus, words: ws, vol: volOf(pg), part: pg.part, pno: pg.pno || 1 });
   }
-  function closeNames() { NM = null; $('ndlg').close(); }
+  function closeNames() { var f = NM && NM.edit && (NM.focus || (NM.words[0] && NM.words[0].id)); NM = null; $('ndlg').close(); if (f) afterEdit(f); }
   $('n-back').addEventListener('click', closeNames);
   $('ndlg').addEventListener('cancel', function (e) { e.preventDefault(); closeNames(); });
   $('n-save').addEventListener('click', async function () {
@@ -1847,8 +1898,10 @@ dialog::backdrop { background: transparent; }
       if (NM.edit) {
         var pg = MN.get(NM.pid), list = [Object.assign({}, pg, { vol: v, part: p, pno: pno })];
         NM.words.forEach(function (w, i) { list.push(Object.assign({}, w, { vol: v, part: p, pno: pno, title: names[i] || '', mean: means[i] || '' })); });
+        var fid = NM.focus || (NM.words[0] && NM.words[0].id);
         closeNames();
         await MN.putMany(list);
+        afterEdit(fid);
         return;
       }
       var pid = newId('p'), now = Date.now(), total = NM.slots.length + 1, done = 0;
