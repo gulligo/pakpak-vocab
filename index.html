@@ -1312,7 +1312,7 @@ dialog::backdrop { background: transparent; }
       var mean = String(x.mean || '').trim();
       h += '<div class="trow' + (T.pi === i ? ' cur' : '') + '" data-id="' + esc(id) + '" data-i="' + i + '"><span class="tn">' + (i + 1) + '</span>' +
            '<button class="tw' + (wh ? ' hid' : '') + '" type="button">' + esc(x.title.trim()) + '</button>' +
-           '<button class="tm' + (mh ? ' hid' : '') + '" type="button">' + (mean ? esc(mean) : (x.photo ? '<img alt="" loading="lazy" src="' + esc(photoUrl(x)) + '">' : '')) + '</button>' +
+           '<button class="tm' + (mh ? ' hid' : '') + '" type="button">' + esc(mean) + '</button>' +
            '<button class="ts" type="button" aria-label="어려운 단어">' + (HARD[id] ? '★' : '☆') + '</button></div>';
     });
     if (!ids.length) h = '<div class="empty">' + (T.hard ? '⭐ 어려운 단어로 표시한 단어가 없습니다.' : '테스트할 단어가 없습니다.') + '</div>';
