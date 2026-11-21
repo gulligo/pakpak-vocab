@@ -1464,8 +1464,9 @@ dialog::backdrop { background: transparent; }
     try { au.pause(); } catch (e) {}
     try { if (clip) clip.pause(); } catch (e) {}
     SQ.ids.forEach(function (id) { var x = MN.get(id); if (x) prepAudio(x.title); });
-    SQ.on = true; SQ.i = 0; SQ.step = 0; SQ.rep = 0; SQ.fails = 0;
-    seqPlay();
+    SQ.on = true; SQ.i = 0; SQ.step = 0; SQ.rep = 0; SQ.fails = 0; SQ.retried = false;
+    SQ.run = (SQ.run || 0) + 1;
+    seqPlay(); seqWarm(SQ.run);
   }
   function seqStop() { SQ.on = false; try { SQ.el.pause(); } catch (e) {} if (T) buildTest(); }
   function seqPlay() {
@@ -1477,7 +1478,8 @@ dialog::backdrop { background: transparent; }
     if (SQ.step >= parts.length) SQ.step = 0;
     SQ.el.src = seqUrl(x, parts[SQ.step]);
     var pr = SQ.el.play();
-    if (pr && pr.catch) pr.catch(function (e) { if (e && e.name === 'AbortError') return; seqFail(); });
+    SQ.tok = (SQ.tok || 0) + 1; var tok = SQ.tok;
+    if (pr && pr.catch) pr.catch(function (e) { if (e && e.name === 'AbortError') return; if (tok === SQ.tok) seqFail(); });
     if ('mediaSession' in navigator) {
       try { navigator.mediaSession.metadata = new MediaMetadata({ title: x.title.trim(), artist: String(x.mean || '') || '찌공이 단어장', album: '찌공이 단어장 · ' + (SQ.i + 1) + '/' + SQ.ids.length, artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] }); } catch (e) {}
     }
@@ -1503,13 +1505,29 @@ dialog::backdrop { background: transparent; }
     seqPlay();
   }
   function seqFail() {
+    if (SQ.failTok === SQ.tok) return;
+    SQ.failTok = SQ.tok;
     if (++SQ.fails > Math.max(8, SQ.ids.length * 3)) { seqStop(); toast('읽어 주기를 할 수 없습니다. 인터넷 연결을 확인해 주세요'); return; }
+    if (!SQ.retried) { SQ.retried = true; setTimeout(function () { if (SQ.on) seqPlay(); }, 1200); return; }
+    SQ.retried = false;
     seqNext();
   }
-  SQ.el.addEventListener('ended', function () { if (!SQ.on) return; SQ.fails = 0; seqNext(); });
+  // 다음에 읽을 소리를 미리 하나씩 만들어 둠 (한꺼번에 몰리지 않게)
+  async function seqWarm(run) {
+    for (var k = 0; k < SQ.ids.length && SQ.on && SQ.run === run; k++) {
+      var x = MN.get(SQ.ids[(SQ.i + 1 + k) % SQ.ids.length]); if (!x) continue;
+      var ps = seqParts(x);
+      for (var m = 0; m < ps.length; m++) {
+        var u = seqUrl(x, ps[m]); if (u.indexOf(API) !== 0) continue;
+        try { await fetch(u); } catch (e) {}
+        if (!SQ.on || SQ.run !== run) return;
+      }
+    }
+  }
+  SQ.el.addEventListener('ended', function () { if (!SQ.on) return; SQ.fails = 0; SQ.retried = false; seqNext(); });
   SQ.el.addEventListener('error', function () { if (SQ.on) seqFail(); });
   au.addEventListener('play', function () { if (SQ.on) seqStop(); });
-  function seqSync() { if (SQ.on && T) { SQ.ids = testIds(); SQ.i = 0; SQ.step = 0; SQ.rep = 0; seqPlay(); } }
+  function seqSync() { if (SQ.on && T) { SQ.ids = testIds(); SQ.i = 0; SQ.step = 0; SQ.rep = 0; SQ.retried = false; SQ.run++; seqPlay(); seqWarm(SQ.run); } }
   $('t-back').addEventListener('click', closeTest);
   $('tdlg').addEventListener('cancel', function (e) { e.preventDefault(); closeTest(); });
   $('abdlg').addEventListener('cancel', function (e) { e.preventDefault(); $('abdlg').close(); renderMn(); });
