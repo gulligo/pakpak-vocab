@@ -2106,3 +2106,9 @@ dialog::backdrop { background: transparent; }
     }
   });
   au.addEventListener('error', function () { if (au.src) toast('mp3를 불러오지 못했습니다'); });
+</script>
+<script>
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+</script>
+</body>
+</html>
