@@ -284,8 +284,10 @@ dialog::backdrop { background: transparent; }
 .star.on { background: var(--warn); color: #fff; }
 .btn.on { background: var(--warn); color: #fff; border-color: var(--warn); }
 .abr .hs { color: var(--warn); margin-left: 6px; }
-.tbar { display: flex; background: var(--accent-bg); }
-.tbar button { flex: 1; border: none; background: transparent; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; padding: 12px 0; cursor: pointer; }
+.tbar { display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 36px; gap: 6px; padding: 0 10px; background: var(--accent-bg); }
+.tg1 { grid-column: 1 / 3; display: flex; }
+.tg2 { grid-column: 3 / 5; display: flex; border-left: 1px solid var(--border); }
+.tbar button { flex: 1; white-space: nowrap; border: none; background: transparent; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; padding: 12px 0; cursor: pointer; }
 .tbar button.on { background: var(--accent); color: var(--surface); }
 .trow { display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 36px; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
 .trow.cur { background: var(--r1); }
@@ -296,7 +298,23 @@ dialog::backdrop { background: transparent; }
 .tm img { max-height: 54px; max-width: 100%; border-radius: 4px; vertical-align: middle; }
 .tw.hid, .tm.hid { background: var(--bg); color: transparent; border: 1px dashed var(--border); }
 .tw.hid img, .tm.hid img { visibility: hidden; }
+.tscore { font-size: 13px; color: var(--muted); padding: 6px 14px; border-bottom: 1px solid var(--border); }
+.tscore:empty { display: none; }
+.tgrade { grid-column: 2 / 5; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); padding: 2px 0 4px; }
+.tgrade button { border: 1px solid var(--border); background: var(--surface); border-radius: 16px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.tn.ok { background: var(--r2); color: var(--ok); }
+.tn.ng { background: var(--r0); color: var(--danger); }
 .ts { border: none; background: transparent; color: var(--warn); font-size: 20px; cursor: pointer; padding: 0; }
+
+.dchk { display: block; margin-top: 14px; font-size: 15px; line-height: 1.5; }
+.dchk input { width: 20px; height: 20px; vertical-align: -4px; margin-right: 6px; }
+.dchk small { display: block; color: var(--muted); font-size: 12px; margin-left: 28px; }
+.dbody { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 24px 60px; text-align: center; }
+.dword { font-size: 46px; font-weight: 800; word-break: break-word; line-height: 1.15; }
+.dpron { color: var(--muted); font-size: 18px; margin-top: 8px; }
+.dmean { font-size: 26px; margin-top: 22px; line-height: 1.4; word-break: keep-all; }
+.dbtns { display: flex; gap: 10px; margin-top: 26px; }
+.dbody .mstart { max-width: 320px; }
 
 /* + 메뉴 */
 .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; display: flex; align-items: flex-end; }
@@ -391,6 +409,7 @@ dialog::backdrop { background: transparent; }
     </div>
     <button class="big a" id="s-page" type="button">📄 페이지 사진으로 단어 추가</button>
     <button class="big b" id="s-mp3" type="button">🎵 이 강 mp3 올리기 / 바꾸기</button>
+    <label class="dchk"><input type="checkbox" id="s-daily"> 앱을 열면 오늘의 단어 먼저 보기 <small>(⭐ 어려운 단어 · 1시간에 한 번 · 이 폰만)</small></label>
     <button class="big c" id="s-close" type="button">닫기</button>
   </div>
 </div>
@@ -440,16 +459,37 @@ dialog::backdrop { background: transparent; }
     <button class="icon" id="t-back" type="button" aria-label="닫기">&#8592;</button>
     <span class="tt" id="t-title">테스트</span>
     <span class="sp"></span>
+    <select id="t-count" aria-label="문제 수" style="height:38px;box-shadow:none;border:1px solid var(--border);max-width:78px">
+      <option value="10">10개</option><option value="20">20개</option><option value="30">30개</option><option value="50">50개</option><option value="0">전체</option>
+    </select>
     <button class="btn" id="t-hard" type="button">⭐만</button>
     <button class="btn pri" id="t-play" type="button">▶ 발음</button>
   </div>
   <div class="tbar">
-    <button type="button" id="t-hide">전체 가림</button>
-    <button type="button" id="t-show">전체 보임</button>
-    <button type="button" id="t-mode">단어 가림</button>
-    <button type="button" id="t-mix">섞기</button>
+    <div class="tg1"><button type="button" id="t-show">전체 보임</button><button type="button" id="t-hw">단어 가림</button></div>
+    <div class="tg2"><button type="button" id="t-hm">뜻 가림</button><button type="button" id="t-mix">섞기</button></div>
   </div>
+  <div class="tscore" id="t-score"></div>
   <div class="mf" id="t-list" style="padding:0"></div>
+</dialog>
+
+<!-- 오늘의 단어 -->
+<dialog id="ddlg">
+  <div class="bar">
+    <span class="tt" id="d-title">오늘의 단어</span>
+    <span class="sp"></span>
+    <button class="btn" id="d-close" type="button">닫기</button>
+  </div>
+  <div class="dbody">
+    <div class="dword" id="d-word"></div>
+    <div class="dpron" id="d-pron"></div>
+    <div class="dmean" id="d-mean"></div>
+    <div class="dbtns">
+      <button class="say" id="d-say" type="button"><img class="sicon" src="sing.png" alt="">발음</button>
+      <button class="star" id="d-star" type="button">★ 어려움</button>
+    </div>
+    <button class="mstart" id="d-next" type="button" style="margin-top:28px">다음 단어</button>
+  </div>
 </dialog>
 
 <!-- 메모 -->
@@ -1007,9 +1047,9 @@ dialog::backdrop { background: transparent; }
   });
   if ('mediaSession' in navigator) {
     try {
-      navigator.mediaSession.setActionHandler('play', function () { au.play(); });
-      navigator.mediaSession.setActionHandler('pause', function () { au.pause(); });
-      navigator.mediaSession.setActionHandler('nexttrack', function () { var nx = curTrack && nextOf(curTrack); if (nx) playTrack(nx); });
+      navigator.mediaSession.setActionHandler('play', function () { if (SQ.on || (SQ.el.src && SQ.el.paused && !curTrack)) { SQ.on = true; SQ.el.play(); } else au.play(); });
+      navigator.mediaSession.setActionHandler('pause', function () { if (SQ.on) { SQ.el.pause(); SQ.on = false; if (T) buildTest(); } else au.pause(); });
+      navigator.mediaSession.setActionHandler('nexttrack', function () { if (SQ.on) { SQ.step = 1; seqNext(); return; } var nx = curTrack && nextOf(curTrack); if (nx) playTrack(nx); });
       navigator.mediaSession.setActionHandler('previoustrack', function () {
         if (au.currentTime > 5) { au.currentTime = 0; return; }
         var pv = curTrack && prevOf(curTrack); if (pv) playTrack(pv); else au.currentTime = 0;
@@ -1288,76 +1328,138 @@ dialog::backdrop { background: transparent; }
 
   /* ================= 테스트 ================= */
   var T = null;
+  function poolIds(hard) { return abcWords().filter(function (x) { return !hard || HARD[x.id]; }).map(function (x) { return x.id; }); }
+  function sampleIds() {
+    var pool = poolIds(T.hard), n = T.count;
+    if (!n || n >= pool.length) { T.order = pool; return; }
+    var a = pool.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+    T.order = a.slice(0, n);
+  }
   function openTest(hardOnly) {
-    T = { hard: !!hardOnly, mode: 'word', hidden: {}, order: null, playing: false, pi: -1 };
+    T = { hard: !!hardOnly, count: lsGet('jg-tcount', 20), hideW: false, hideM: false, revW: {}, revM: {}, res: {}, order: null };
+    $('t-count').value = String(T.count);
+    sampleIds();
     buildTest();
     $('tdlg').showModal();
     $('t-list').scrollTop = 0;
   }
-  function testIds() {
-    var ids = abcWords().filter(function (x) { return !T.hard || HARD[x.id]; }).map(function (x) { return x.id; });
-    if (T.order) ids = T.order.filter(function (id) { return ids.indexOf(id) >= 0; });
-    return ids;
-  }
+  function testIds() { return (T.order || []).filter(function (id) { return MN.get(id); }); }
   function buildTest() {
-    var ids = testIds(), h = '';
-    $('t-title').textContent = (T.hard ? '⭐ 테스트 · ' : '테스트 · ') + ids.length;
+    var ids = testIds(), h = '', ok = 0, ng = 0, pool = poolIds(T.hard).length;
+    $('t-title').textContent = (T.hard ? '⭐ ' : '') + '문제 ' + ids.length + '/' + pool;
     $('t-hard').classList.toggle('on', T.hard);
-    $('t-mode').textContent = T.mode === 'word' ? '단어 가림' : '뜻 가림';
-    $('t-play').textContent = T.playing ? '■ 멈춤' : '▶ 발음';
+    $('t-hw').textContent = T.hideW ? '단어 보임' : '단어 가림';
+    $('t-hm').textContent = T.hideM ? '뜻 보임' : '뜻 가림';
+    $('t-hw').classList.toggle('on', T.hideW);
+    $('t-hm').classList.toggle('on', T.hideM);
+    $('t-play').textContent = SQ.on ? '■ 멈춤' : '▶ 발음';
     ids.forEach(function (id, i) {
       var x = MN.get(id); if (!x) return;
-      var hid = !!T.hidden[id];
-      var wh = hid && T.mode === 'word', mh = hid && T.mode === 'mean';
+      var wh = T.hideW && !T.revW[id], mh = T.hideM && !T.revM[id];
+      var opened = (T.hideW && T.revW[id]) || (T.hideM && T.revM[id]);
+      var r = T.res[id];
+      if (r === 1) ok++; else if (r === 2) ng++;
       var mean = String(x.mean || '').trim();
-      h += '<div class="trow' + (T.pi === i ? ' cur' : '') + '" data-id="' + esc(id) + '" data-i="' + i + '"><span class="tn">' + (i + 1) + '</span>' +
+      h += '<div class="trow' + (SQ.on && SQ.ids[SQ.i] === id ? ' cur' : '') + '" data-id="' + esc(id) + '" data-i="' + i + '">' +
+           '<span class="tn' + (r === 1 ? ' ok' : r === 2 ? ' ng' : '') + '">' + (r === 1 ? '⭕' : r === 2 ? '❌' : (i + 1)) + '</span>' +
            '<button class="tw' + (wh ? ' hid' : '') + '" type="button">' + esc(x.title.trim()) + '</button>' +
            '<button class="tm' + (mh ? ' hid' : '') + '" type="button">' + esc(mean) + '</button>' +
-           '<button class="ts" type="button" aria-label="어려운 단어">' + (HARD[id] ? '★' : '☆') + '</button></div>';
+           '<button class="ts" type="button" aria-label="어려운 단어">' + (HARD[id] ? '★' : '☆') + '</button>' +
+           (opened && !r ? '<div class="tgrade">맞았나요? <button type="button" data-g="1">⭕ 맞음</button><button type="button" data-g="2">❌ 틀림</button></div>' : '') +
+           '</div>';
     });
     if (!ids.length) h = '<div class="empty">' + (T.hard ? '⭐ 어려운 단어로 표시한 단어가 없습니다.' : '테스트할 단어가 없습니다.') + '</div>';
+    $('t-score').textContent = (ok || ng) ? '⭕ 맞음 ' + ok + '   ❌ 틀림 ' + ng + '   (틀린 단어는 자동으로 ⭐)' : '';
     $('t-list').innerHTML = h;
-  }
-  function stopPlay() { T && (T.playing = false); clearTimeout(stopPlay.t); if (T) { T.pi = -1; } }
-  function playFrom(i) {
-    if (!T || !T.playing) return;
-    var ids = testIds();
-    if (i >= ids.length) { stopPlay(); buildTest(); return; }
-    T.pi = i; buildTest();
-    var row = $('t-list').querySelector('.trow[data-i="' + i + '"]');
-    if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    var x = MN.get(ids[i]);
-    if (x) say(x.title);
-    stopPlay.t = setTimeout(function () { playFrom(i + 1); }, 2300);
   }
   $('t-list').addEventListener('click', function (e) {
     var row = e.target.closest('.trow'); if (!row) return;
     var id = row.dataset.id, x = MN.get(id); if (!x) return;
+    var g = e.target.closest('[data-g]');
+    if (g) {
+      var v = Number(g.dataset.g);
+      T.res[id] = v;
+      if (v === 2) { HARD[id] = 1; lsSet('jg-hard', HARD); }
+      buildTest(); return;
+    }
     if (e.target.closest('.ts')) { toggleHard(id); buildTest(); return; }
     var w = e.target.closest('.tw'), m = e.target.closest('.tm');
     if (w) {
-      if (w.classList.contains('hid')) { delete T.hidden[id]; buildTest(); }
+      if (T.hideW) { if (T.revW[id]) delete T.revW[id]; else T.revW[id] = 1; buildTest(); }
       say(x.title);
     } else if (m) {
-      if (m.classList.contains('hid')) delete T.hidden[id];
-      else if (T.mode === 'mean') T.hidden[id] = 1;
-      buildTest();
+      if (T.hideM) { if (T.revM[id]) delete T.revM[id]; else T.revM[id] = 1; buildTest(); }
     }
   });
-  $('t-hide').addEventListener('click', function () { T.hidden = {}; testIds().forEach(function (id) { T.hidden[id] = 1; }); buildTest(); });
-  $('t-show').addEventListener('click', function () { T.hidden = {}; buildTest(); });
-  $('t-mode').addEventListener('click', function () { T.mode = T.mode === 'word' ? 'mean' : 'word'; buildTest(); });
+  $('t-show').addEventListener('click', function () { T.hideW = T.hideM = false; T.revW = {}; T.revM = {}; buildTest(); });
+  $('t-hw').addEventListener('click', function () { T.hideW = !T.hideW; T.revW = {}; buildTest(); });
+  $('t-hm').addEventListener('click', function () { T.hideM = !T.hideM; T.revM = {}; buildTest(); });
   $('t-mix').addEventListener('click', function () {
     var ids = testIds();
     for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
-    T.order = ids; stopPlay(); buildTest(); $('t-list').scrollTop = 0;
+    T.order = ids; buildTest(); $('t-list').scrollTop = 0;
   });
-  $('t-hard').addEventListener('click', function () { T.hard = !T.hard; stopPlay(); buildTest(); $('t-list').scrollTop = 0; });
+  $('t-count').addEventListener('change', function () {
+    T.count = Number($('t-count').value) || 0; lsSet('jg-tcount', T.count);
+    T.res = {}; T.revW = {}; T.revM = {}; sampleIds(); buildTest(); $('t-list').scrollTop = 0;
+  });
+  $('t-hard').addEventListener('click', function () { T.hard = !T.hard; T.res = {}; T.revW = {}; T.revM = {}; sampleIds(); buildTest(); $('t-list').scrollTop = 0; });
   $('t-play').addEventListener('click', function () {
-    if (T.playing) { stopPlay(); buildTest(); return; }
-    T.playing = true; playFrom(0);
+    if (SQ.on) seqStop(); else seqStart(T.hard);
+    buildTest();
   });
-  function closeTest() { stopPlay(); $('tdlg').close(); T = null; if ($('abdlg').open) renderAbc(); }
+  function closeTest() { $('tdlg').close(); T = null; if ($('abdlg').open) renderAbc(); }
+
+  /* ================= 연속 듣기 (단어 + 뜻, 끝없이 반복) ================= */
+  var SQ = { on: false, hard: false, ids: [], i: 0, step: 0, fails: 0, el: new Audio() };
+  SQ.el.preload = 'auto';
+  function seqUrl(x, step) {
+    if (step === 0) { var w = wkey(x.title); return (w && AUD[w]) || gUrl(x.title.trim()); }
+    return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ko&q=' + encodeURIComponent(String(x.mean || '').trim());
+  }
+  function seqStart(hard) {
+    SQ.hard = !!hard; SQ.ids = poolIds(SQ.hard);
+    if (!SQ.ids.length) { toast(SQ.hard ? '⭐ 어려운 단어가 없습니다' : '읽을 단어가 없습니다'); return; }
+    try { au.pause(); } catch (e) {}
+    try { if (clip) clip.pause(); } catch (e) {}
+    SQ.on = true; SQ.i = 0; SQ.step = 0; SQ.fails = 0;
+    seqPlay();
+  }
+  function seqStop() { SQ.on = false; try { SQ.el.pause(); } catch (e) {} if (T) buildTest(); }
+  function seqPlay() {
+    if (!SQ.on) return;
+    if (!SQ.ids.length) { seqStop(); return; }
+    var x = MN.get(SQ.ids[SQ.i]);
+    if (!x || !String(x.title || '').trim()) { seqNext(true); return; }
+    if (SQ.step === 1 && !String(x.mean || '').trim()) { seqNext(); return; }
+    SQ.el.src = seqUrl(x, SQ.step);
+    var pr = SQ.el.play();
+    if (pr && pr.catch) pr.catch(function (e) { if (e && e.name === 'AbortError') return; seqFail(); });
+    if ('mediaSession' in navigator) {
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: x.title.trim(), artist: String(x.mean || '') || '찌공이 단어장', album: SQ.hard ? '⭐ 어려운 단어' : '전체 단어', artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] }); } catch (e) {}
+    }
+    if (T && $('tdlg').open) {
+      buildTest();
+      var row = $('t-list').querySelector('.trow[data-id="' + SQ.ids[SQ.i] + '"]');
+      if (row && SQ.step === 0) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }
+  function seqNext(skipMean) {
+    if (SQ.step === 0 && !skipMean) SQ.step = 1;
+    else {
+      SQ.step = 0; SQ.i++;
+      if (SQ.i >= SQ.ids.length) { SQ.i = 0; SQ.ids = poolIds(SQ.hard); }
+    }
+    seqPlay();
+  }
+  function seqFail() {
+    if (++SQ.fails > 6) { seqStop(); toast('읽어 주기를 할 수 없습니다. 인터넷 연결을 확인해 주세요'); return; }
+    seqNext();
+  }
+  SQ.el.addEventListener('ended', function () { if (!SQ.on) return; SQ.fails = 0; seqNext(); });
+  SQ.el.addEventListener('error', function () { if (SQ.on) seqFail(); });
+  au.addEventListener('play', function () { if (SQ.on) seqStop(); });
   $('t-back').addEventListener('click', closeTest);
   $('tdlg').addEventListener('cancel', function (e) { e.preventDefault(); closeTest(); });
   $('abdlg').addEventListener('cancel', function (e) { e.preventDefault(); $('abdlg').close(); renderMn(); });
@@ -1791,99 +1893,4 @@ dialog::backdrop { background: transparent; }
 
   function sorted(list) {
     var cmp = {
-      az: function (a, b) { return a.title.toLowerCase().localeCompare(b.title.toLowerCase(), 'en'); },
-      za: function (a, b) { return b.title.toLowerCase().localeCompare(a.title.toLowerCase(), 'en'); },
-      created: function (a, b) { return (a.created || 0) - (b.created || 0); },
-      updated: function (a, b) { return (b.updated || 0) - (a.updated || 0); }
-    }[$('sort').value];
-    return list.slice().sort(cmp);
-  }
-  function matches(w, q) {
-    if (!q) return true;
-    return (w.title + '\n' + w.body).toLowerCase().indexOf(q.toLowerCase()) >= 0;
-  }
-  function cardFor(w) {
-    var c = document.createElement('button');
-    c.type = 'button'; c.className = 'card';
-    var h = document.createElement('h3'); h.textContent = w.title; c.appendChild(h);
-    var b = document.createElement('div'); b.className = 'body'; b.textContent = w.body; c.appendChild(b);
-    c.addEventListener('click', function () { openEditor(w); });
-    return c;
-  }
-  function render() {
-    var words = PK.list();
-    var q = $('q').value.trim();
-    var list = sorted(words.filter(function (w) { return matches(w, q); }));
-    grid.textContent = '';
-    list.forEach(function (w) { grid.appendChild(cardFor(w)); });
-    if (!list.length) {
-      emptyEl.hidden = false;
-      emptyEl.textContent = words.length ? '검색 결과가 없습니다.' : '메모가 없습니다.\n오른쪽 아래 + 버튼으로 추가하세요.';
-    } else { emptyEl.hidden = true; }
-  }
-  PK.onchange = render;
-
-  function grow() {
-    var t = $('f-body');
-    t.style.height = 'auto';
-    t.style.height = Math.max(t.scrollHeight, Math.round(window.innerHeight * 0.6)) + 'px';
-  }
-  function openEditor(w) {
-    editingId = w ? w.id : null;
-    $('f-title').value = w ? w.title : '';
-    $('f-body').value = w ? w.body : '';
-    $('err').textContent = '';
-    delArmed = false;
-    $('del').textContent = '삭제';
-    $('del').style.visibility = w ? 'visible' : 'hidden';
-    dlg.showModal();
-    $('edit').scrollTop = 0;
-    grow();
-    if (!w) $('f-title').focus();
-  }
-  async function saveAndClose() {
-    var title = $('f-title').value.trim();
-    var body = $('f-body').value.replace(/\s+$/, '');
-    if (!title && !body) { dlg.close(); return; }
-    if (!title) { $('err').textContent = '제목(단어)을 입력해 주세요.'; $('f-title').focus(); return; }
-    var now = Date.now();
-    var old = editingId ? PK.get(editingId) : null;
-    var w = { id: old ? old.id : newId('w'), title: title, body: body, created: old ? (old.created || now) : now };
-    var changed = !old || old.title !== w.title || old.body !== w.body;
-    dlg.close();
-    if (changed) await PK.put(w);
-  }
-  $('back').addEventListener('click', saveAndClose);
-  dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); saveAndClose(); });
-  $('f-body').addEventListener('input', grow);
-  $('del').addEventListener('click', async function () {
-    if (!editingId) return;
-    if (!delArmed) { delArmed = true; $('del').textContent = '정말 삭제'; return; }
-    var w = PK.get(editingId);
-    dlg.close();
-    if (w) await PK.put(Object.assign({}, w, { del: true }));
-  });
-  $('q').addEventListener('input', render);
-  $('sort').addEventListener('change', function () {
-    try { localStorage.setItem('vocab-sort', $('sort').value); } catch (e) {}
-    render();
-  });
-  try {
-    var s = localStorage.getItem('vocab-sort');
-    if (s && ['az', 'za', 'created', 'updated'].indexOf(s) >= 0) $('sort').value = s;
-  } catch (e) {}
-
-  /* ================= 시작 ================= */
-  setTab('mn');
-  renderMn();
-  render();
-  sync();
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') sync(true); });
-  window.addEventListener('online', function () { sync(true); });
-})();
-</script>
-<script>
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-</script>
-</body>
-</html>
+      az: function (a, b) { return 
