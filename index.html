@@ -1893,4 +1893,145 @@ dialog::backdrop { background: transparent; }
 
   function sorted(list) {
     var cmp = {
-      az: function (a, b) { return 
+      az: function (a, b) { return a.title.toLowerCase().localeCompare(b.title.toLowerCase(), 'en'); },
+      za: function (a, b) { return b.title.toLowerCase().localeCompare(a.title.toLowerCase(), 'en'); },
+      created: function (a, b) { return (a.created || 0) - (b.created || 0); },
+      updated: function (a, b) { return (b.updated || 0) - (a.updated || 0); }
+    }[$('sort').value];
+    return list.slice().sort(cmp);
+  }
+  function matches(w, q) {
+    if (!q) return true;
+    return (w.title + '\n' + w.body).toLowerCase().indexOf(q.toLowerCase()) >= 0;
+  }
+  function cardFor(w) {
+    var c = document.createElement('button');
+    c.type = 'button'; c.className = 'card';
+    var h = document.createElement('h3'); h.textContent = w.title; c.appendChild(h);
+    var b = document.createElement('div'); b.className = 'body'; b.textContent = w.body; c.appendChild(b);
+    c.addEventListener('click', function () { openEditor(w); });
+    return c;
+  }
+  function render() {
+    var words = PK.list();
+    var q = $('q').value.trim();
+    var list = sorted(words.filter(function (w) { return matches(w, q); }));
+    grid.textContent = '';
+    list.forEach(function (w) { grid.appendChild(cardFor(w)); });
+    if (!list.length) {
+      emptyEl.hidden = false;
+      emptyEl.textContent = words.length ? '검색 결과가 없습니다.' : '메모가 없습니다.\n오른쪽 아래 + 버튼으로 추가하세요.';
+    } else { emptyEl.hidden = true; }
+  }
+  PK.onchange = render;
+
+  function grow() {
+    var t = $('f-body');
+    t.style.height = 'auto';
+    t.style.height = Math.max(t.scrollHeight, Math.round(window.innerHeight * 0.6)) + 'px';
+  }
+  function openEditor(w) {
+    editingId = w ? w.id : null;
+    $('f-title').value = w ? w.title : '';
+    $('f-body').value = w ? w.body : '';
+    $('err').textContent = '';
+    delArmed = false;
+    $('del').textContent = '삭제';
+    $('del').style.visibility = w ? 'visible' : 'hidden';
+    dlg.showModal();
+    $('edit').scrollTop = 0;
+    grow();
+    if (!w) $('f-title').focus();
+  }
+  async function saveAndClose() {
+    var title = $('f-title').value.trim();
+    var body = $('f-body').value.replace(/\s+$/, '');
+    if (!title && !body) { dlg.close(); return; }
+    if (!title) { $('err').textContent = '제목(단어)을 입력해 주세요.'; $('f-title').focus(); return; }
+    var now = Date.now();
+    var old = editingId ? PK.get(editingId) : null;
+    var w = { id: old ? old.id : newId('w'), title: title, body: body, created: old ? (old.created || now) : now };
+    var changed = !old || old.title !== w.title || old.body !== w.body;
+    dlg.close();
+    if (changed) await PK.put(w);
+  }
+  $('back').addEventListener('click', saveAndClose);
+  dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); saveAndClose(); });
+  $('f-body').addEventListener('input', grow);
+  $('del').addEventListener('click', async function () {
+    if (!editingId) return;
+    if (!delArmed) { delArmed = true; $('del').textContent = '정말 삭제'; return; }
+    var w = PK.get(editingId);
+    dlg.close();
+    if (w) await PK.put(Object.assign({}, w, { del: true }));
+  });
+  $('q').addEventListener('input', render);
+  $('sort').addEventListener('change', function () {
+    try { localStorage.setItem('vocab-sort', $('sort').value); } catch (e) {}
+    render();
+  });
+  try {
+    var s = localStorage.getItem('vocab-sort');
+    if (s && ['az', 'za', 'created', 'updated'].indexOf(s) >= 0) $('sort').value = s;
+  } catch (e) {}
+
+  /* ================= 오늘의 단어 (잠금 해제 시) ================= */
+  var DW = { id: null };
+  $('s-daily').checked = localStorage.getItem('jg-daily') === '1';
+  $('s-daily').addEventListener('change', function () {
+    localStorage.setItem('jg-daily', $('s-daily').checked ? '1' : '0');
+    toast($('s-daily').checked ? '이 폰에서 오늘의 단어를 켰습니다' : '오늘의 단어를 껐습니다');
+  });
+  function dailyPick() {
+    var named = words().filter(function (x) { return String(x.title || '').trim(); });
+    var hard = named.filter(function (x) { return HARD[x.id]; });
+    var pool = hard.length ? hard : named;
+    if (!pool.length) return null;
+    if (pool.length > 1) pool = pool.filter(function (x) { return x.id !== DW.id; });
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  function dailyShow(x) {
+    if (!x) return false;
+    DW.id = x.id;
+    $('d-title').textContent = (HARD[x.id] ? '⭐ ' : '') + '오늘의 단어 · ' + label(x);
+    $('d-word').textContent = x.title.trim();
+    $('d-pron').textContent = x.pron || '';
+    $('d-mean').textContent = x.mean || '';
+    $('d-star').classList.toggle('on', !!HARD[x.id]);
+    $('d-star').textContent = HARD[x.id] ? '★ 어려움' : '☆ 어려움';
+    warm(x.title);
+    if (!$('ddlg').open) $('ddlg').showModal();
+    setTimeout(function () { say(x.title); }, 300);
+    return true;
+  }
+  function dailyCheck() {
+    if (localStorage.getItem('jg-daily') !== '1') return;
+    if (document.querySelector('dialog[open]')) return;
+    var last = Number(localStorage.getItem('jg-daily-at') || 0);
+    if (Date.now() - last < 60 * 60 * 1000) return;
+    if (dailyShow(dailyPick())) localStorage.setItem('jg-daily-at', String(Date.now()));
+  }
+  $('d-next').addEventListener('click', function () { dailyShow(dailyPick()); });
+  $('d-say').addEventListener('click', function () { var x = MN.get(DW.id); if (x) say(x.title); });
+  $('d-star').addEventListener('click', function () {
+    var on = toggleHard(DW.id), b = $('d-star');
+    b.classList.toggle('on', on); b.textContent = on ? '★ 어려움' : '☆ 어려움';
+  });
+  $('d-close').addEventListener('click', function () { $('ddlg').close(); renderMn(); });
+  $('ddlg').addEventListener('cancel', function (e) { e.preventDefault(); $('ddlg').close(); renderMn(); });
+
+  /* ================= 시작 ================= */
+  setTab('mn');
+  renderMn();
+  render();
+  sync();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { sync(true); setTimeout(dailyCheck, 400); } });
+  setTimeout(dailyCheck, 800);
+  window.addEventListener('online', function () { sync(true); });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+</script>
+</body>
+</html>
