@@ -302,6 +302,7 @@ dialog::backdrop { background: transparent; }
 .tw.hid img, .tm.hid img { visibility: hidden; }
 .tset { display: flex; gap: 14px; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
 .tset select { height: 32px; box-shadow: none; border: 1px solid var(--border); font-size: 13px; padding: 0 6px; max-width: none; }
+.tile.reading { outline: 4px solid #fbbc04; outline-offset: 2px; }
 .tile.flash { outline: 3px solid var(--warn); outline-offset: 2px; }
 .tscore { font-size: 13px; color: var(--muted); padding: 6px 14px; border-bottom: 1px solid var(--border); }
 .tscore:empty { display: none; }
@@ -824,7 +825,8 @@ dialog::backdrop { background: transparent; }
   function tileHtml(x, inSearch) {
     var memo = String(x.memo || '').trim(), seen = inSearch && SEEN[x.id];
     var ar = x.sw && x.sh ? ' style="aspect-ratio:' + x.sw + ' / ' + x.sh + '"' : '';
-    return '<button class="tile' + (memo ? ' memo' : '') + (seen ? ' seen' : '') + '" data-id="' + esc(x.id) + '" type="button">' +
+    var rd = !inSearch && SQ && SQ.on && SQ.src !== 'test' && SQ.ids[SQ.i] === x.id;
+    return '<button class="tile' + (memo ? ' memo' : '') + (seen ? ' seen' : '') + (rd ? ' reading' : '') + '" data-id="' + esc(x.id) + '" type="button">' +
       (x.photo ? '<img loading="lazy" draggable="false" alt="' + esc(x.title || '') + '"' + ar + ' src="' + esc(photoUrl(x)) + '">' : '<span class="nm">' + esc(x.title || '') + '</span>') +
       (memo ? '<span class="mk">📝</span>' : '') + (seen ? '<span class="sk">찾아봄 ' + SEEN[x.id] + '번</span>' : '') + '</button>';
   }
@@ -1463,6 +1465,20 @@ dialog::backdrop { background: transparent; }
     if (part === 'en') return ttsUrl('en', x.title);
     return ttsUrl('ko', x.mean);
   }
+  // 강별 듣기: 읽는 단어 칸 표시 + 화면 따라가기 (직접 넘기면 5초 쉼)
+  var userScrollAt = 0;
+  ['touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { userScrollAt = Date.now(); }, { passive: true }); });
+  function followTile(id) {
+    document.querySelectorAll('#mn-list .tile.reading').forEach(function (t) { t.classList.remove('reading'); });
+    if (!id || tab !== 'mn' || searching) return;
+    var t = $('mn-list').querySelector('.tile[data-id="' + id + '"]');
+    if (!t) return;
+    t.classList.add('reading');
+    if (document.hidden || document.querySelector('dialog[open]') || Date.now() - userScrollAt < 5000) return;
+    var r = t.getBoundingClientRect(), hh = document.querySelector('header').offsetHeight;
+    var y = window.scrollY + r.top - hh - (window.innerHeight - hh - r.height) / 2;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  }
   function listenMark() {
     document.querySelectorAll('[data-listen]').forEach(function (b) {
       var on = SQ.on && SQ.src === vol + '-' + b.dataset.listen;
@@ -1486,7 +1502,7 @@ dialog::backdrop { background: transparent; }
     SQ.run = (SQ.run || 0) + 1;
     seqPlay(); seqWarm(SQ.run); listenMark();
   }
-  function seqStop() { SQ.on = false; SQ.src = null; try { SQ.el.pause(); } catch (e) {} if (T) buildTest(); listenMark(); }
+  function seqStop() { followTile(null); SQ.on = false; SQ.src = null; try { SQ.el.pause(); } catch (e) {} if (T) buildTest(); listenMark(); }
   function seqPlay() {
     if (!SQ.on) return;
     if (!SQ.ids.length) { seqStop(); return; }
@@ -1501,6 +1517,7 @@ dialog::backdrop { background: transparent; }
     if ('mediaSession' in navigator) {
       try { navigator.mediaSession.metadata = new MediaMetadata({ title: x.title.trim(), artist: String(x.mean || '') || '찌공이 단어장', album: '찌공이 단어장 · ' + (SQ.i + 1) + '/' + SQ.ids.length, artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] }); } catch (e) {}
     }
+    if (SQ.src !== 'test' && SQ.step === 0 && SQ.rep === 0) followTile(SQ.ids[SQ.i]);
     if (T && $('tdlg').open && SQ.step === 0 && SQ.rep === 0) {
       buildTest();
       var row = $('t-list').querySelector('.trow[data-id="' + SQ.ids[SQ.i] + '"]');
