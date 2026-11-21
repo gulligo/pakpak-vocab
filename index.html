@@ -1455,7 +1455,7 @@ dialog::backdrop { background: transparent; }
     return SQ.ord === 'ke' ? ['ko', 'en'] : ['en', 'ko'];
   }
   function seqUrl(x, part) {
-    if (part === 'en') { var w = wkey(x.title); return (w && AUD[w]) || ttsUrl('en', x.title); }
+    if (part === 'en') return ttsUrl('en', x.title);
     return ttsUrl('ko', x.mean);
   }
   function seqStart(ids) {
