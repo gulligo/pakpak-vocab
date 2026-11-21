@@ -486,9 +486,9 @@ dialog::backdrop { background: transparent; }
     <label>단어</label>
     <input id="f-word" autocomplete="off" autocapitalize="none">
     <label>뜻</label>
-    <input id="f-wmean" autocomplete="off" placeholder="중심, 핵심">
+    <input id="f-wmean" autocomplete="off">
     <label>발음기호 (선택)</label>
-    <input id="f-pron" autocomplete="off" autocapitalize="none" placeholder="[kɔːr]">
+    <input id="f-pron" autocomplete="off" autocapitalize="none">
   </div>
 </dialog>
 
@@ -1718,9 +1718,9 @@ dialog::backdrop { background: transparent; }
     for (var i = 0; i < (o.edit ? o.words.length : o.slots.length); i++) {
       var src = o.edit ? (o.words[i].photo ? photoUrl(o.words[i]) : '') : o.slots[i].toDataURL('image/jpeg', 0.7);
       var val = o.edit ? (o.words[i].title || '') : '', mv = o.edit ? (o.words[i].mean || '') : '';
-      h += '<div class="nrow"><img alt="" src="' + esc(src) + '"><div class="nf"><span>' + (i + 1) + '번 단어</span>' +
-           '<input class="nin" data-i="' + i + '" value="' + esc(val) + '" autocomplete="off" autocapitalize="none" placeholder="영어 단어">' +
-           '<input class="nmean" data-i="' + i + '" value="' + esc(mv) + '" autocomplete="off" placeholder="뜻 (예: 중심, 핵심)" style="margin-top:6px;font-size:15px"></div></div>';
+      h += '<div class="nrow"><img alt="" src="' + esc(src) + '"><div class="nf"><span>' + (i + 1) + '번 영어 단어</span>' +
+           '<input class="nin" data-i="' + i + '" value="' + esc(val) + '" autocomplete="off" autocapitalize="none">' +
+           '<span style="margin-top:6px">뜻</span><input class="nmean" data-i="' + i + '" value="' + esc(mv) + '" autocomplete="off" style="margin-top:6px;font-size:15px"></div></div>';
     }
     $('n-list').innerHTML = h;
     $('ndlg').showModal();
