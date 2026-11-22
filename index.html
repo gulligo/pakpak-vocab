@@ -1846,11 +1846,14 @@ dialog::backdrop { background: transparent; }
     ctx.fillStyle = 'rgba(0,0,0,.2)';
     ctx.fillRect(0, 0, CW, T); ctx.fillRect(0, B, CW, CH - B);
     ctx.fillRect(0, T, L, B - T); ctx.fillRect(R, T, CW - R, B - T);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = '#e53935';
+    // 빨간 선은 두껍게 — 선이 덮은 부분은 잘라서 버림 (책에 인쇄된 구분선이 단어 사진에 안 나오게)
+    var G = 14; SP.gx = G / CW; SP.gy = G / CH;
+    ctx.lineWidth = G;
+    ctx.strokeStyle = 'rgba(229,57,53,.55)';
     var x = SP.x * CW;
     ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, B); ctx.stroke();
     SP.ys.forEach(function (y) { var yy = y * CH; ctx.beginPath(); ctx.moveTo(L, yy); ctx.lineTo(R, yy); ctx.stroke(); });
+    ctx.lineWidth = 3;
     ctx.strokeStyle = '#1a73e8';
     ctx.strokeRect(Math.max(1.5, L), Math.max(1.5, T), Math.min(CW - 1.5, R) - Math.max(1.5, L), Math.min(CH - 1.5, B) - Math.max(1.5, T));
     handles().forEach(function (h) {
@@ -1912,7 +1915,9 @@ dialog::backdrop { background: transparent; }
   $('sp-ok').addEventListener('click', function () {
     var W = SP.page.width, Hh = SP.page.height, cols = [SP.left, SP.x, SP.right], rows = [SP.top].concat(SP.ys, [SP.bot]), slots = [];
     for (var r = 0; r < rows.length - 1; r++) for (var c = 0; c < 2; c++) {
-      var x0 = Math.round(cols[c] * W), x1 = Math.round(cols[c + 1] * W), y0 = Math.round(rows[r] * Hh), y1 = Math.round(rows[r + 1] * Hh);
+      var gx = (SP.gx || 0) / 2, gy = (SP.gy || 0) / 2, last = rows.length - 2;
+      var x0 = Math.round((cols[c] + (c > 0 ? gx : 0)) * W), x1 = Math.round((cols[c + 1] - (c < 1 ? gx : 0)) * W);
+      var y0 = Math.round((rows[r] + (r > 0 ? gy : 0)) * Hh), y1 = Math.round((rows[r + 1] - (r < last ? gy : 0)) * Hh);
       var cc = document.createElement('canvas'); cc.width = x1 - x0; cc.height = y1 - y0;
       cc.getContext('2d').drawImage(SP.page, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
       slots.push(cc);
