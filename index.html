@@ -103,6 +103,10 @@ section[hidden] { display: none; }
   overflow: hidden;
 }
 .empty { text-align: center; color: var(--muted); padding: 60px 20px; line-height: 1.8; white-space: pre-line; }
+@media (orientation: landscape) and (max-height: 600px) {
+  header { position: static; }
+  .fab { display: none !important; }
+}
 .fab {
   position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   width: 58px; height: 58px; border-radius: 18px; border: none;
@@ -735,6 +739,9 @@ dialog::backdrop { background: transparent; }
     return new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.85); });
   }
 
+  // 가로 화면에서는 위쪽 줄이 같이 올라가 사라짐 → 높이 0으로 계산
+  function hdrH() { var h = document.querySelector('header'); return getComputedStyle(h).position === 'sticky' ? h.offsetHeight : 0; }
+
   /* ================= 탭 ================= */
   var tab = 'mn';
   var tabScroll = { mn: null, pak: 0 };
@@ -883,7 +890,7 @@ dialog::backdrop { background: transparent; }
   function jumpTo(p, smooth) {
     var el = p && $('ph-' + p);
     if (!el) { window.scrollTo(0, 0); return; }
-    var y = el.getBoundingClientRect().top + window.scrollY - document.querySelector('header').offsetHeight - 4;
+    var y = el.getBoundingClientRect().top + window.scrollY - hdrH() - 4;
     window.scrollTo({ top: Math.max(0, y), behavior: smooth ? 'smooth' : 'auto' });
   }
   var spyT = 0;
@@ -891,7 +898,7 @@ dialog::backdrop { background: transparent; }
     if (tab !== 'mn' || searching || spyT) return;
     spyT = setTimeout(function () {
       spyT = 0;
-      var hh = document.querySelector('header').offsetHeight, cur = null;
+      var hh = hdrH(), cur = null;
       document.querySelectorAll('.phd').forEach(function (el) { if (el.getBoundingClientRect().top <= hh + 30) cur = Number(el.dataset.p); });
       if (cur == null) { var f = document.querySelector('.phd'); if (f) cur = Number(f.dataset.p); }
       if (cur != null && cur !== sel()) {
@@ -1091,16 +1098,17 @@ dialog::backdrop { background: transparent; }
   function openSheet() {
     var p = sel();
     $('s-vol').value = vol;
-    $('s-part').value = p || 1;
+    $('s-part').value = '';
     $('sheet').hidden = false;
   }
   function closeSheet() { $('sheet').hidden = true; }
   $('s-close').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet') closeSheet(); });
   var target = { vol: 1, part: 1 };
-  function readSheet() { target = { vol: Math.min(2, int($('s-vol').value, 1)), part: int($('s-part').value, 1) }; }
-  $('s-page').addEventListener('click', function () { readSheet(); closeSheet(); $('pfile').value = ''; $('pfile').click(); });
-  $('s-mp3').addEventListener('click', function () { readSheet(); closeSheet(); $('afile').value = ''; $('afile').click(); });
+  function readSheet() { target = { vol: Math.min(2, int($('s-vol').value, 1)), part: int($('s-part').value, 0) }; }
+  function needPart() { if (target.part) return false; toast('강 번호를 입력해 주세요'); $('s-part').focus(); return true; }
+  $('s-page').addEventListener('click', function () { readSheet(); if (needPart()) return; closeSheet(); $('pfile').value = ''; $('pfile').click(); });
+  $('s-mp3').addEventListener('click', function () { readSheet(); if (needPart()) return; closeSheet(); $('afile').value = ''; $('afile').click(); });
   $('afile').addEventListener('change', async function () {
     var f = $('afile').files && $('afile').files[0];
     if (!f) return;
@@ -1332,7 +1340,7 @@ dialog::backdrop { background: transparent; }
       if (tab !== 'mn' || searching) return;
       var t = $('mn-list').querySelector('.tile[data-id="' + id + '"]');
       if (!t) return;
-      var r = t.getBoundingClientRect(), hh = document.querySelector('header').offsetHeight;
+      var r = t.getBoundingClientRect(), hh = hdrH();
       if (r.top < hh || r.bottom > window.innerHeight) window.scrollTo({ top: window.scrollY + r.top - hh - 60, behavior: smooth ? 'smooth' : 'auto' });
       t.classList.add('flash');
       clearTimeout(focusTile.t); focusTile.t = setTimeout(function () { var f = $('mn-list').querySelector('.tile.flash'); if (f) f.classList.remove('flash'); }, 1800);
@@ -1489,7 +1497,7 @@ dialog::backdrop { background: transparent; }
     if (!t) return;
     t.classList.add('reading');
     if (document.hidden || document.querySelector('dialog[open]') || Date.now() - userScrollAt < 5000) return;
-    var r = t.getBoundingClientRect(), hh = document.querySelector('header').offsetHeight;
+    var r = t.getBoundingClientRect(), hh = hdrH();
     var y = window.scrollY + r.top - hh - (window.innerHeight - hh - r.height) / 2;
     window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }
