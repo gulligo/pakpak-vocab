@@ -1847,11 +1847,12 @@ dialog::backdrop { background: transparent; }
     ctx.fillRect(0, 0, CW, T); ctx.fillRect(0, B, CW, CH - B);
     ctx.fillRect(0, T, L, B - T); ctx.fillRect(R, T, CW - R, B - T);
     // 빨간 선은 두껍게 — 선이 덮은 부분은 잘라서 버림 (책에 인쇄된 구분선이 단어 사진에 안 나오게)
-    var G = 14; SP.gx = G / CW; SP.gy = G / CH;
-    ctx.lineWidth = G;
+    var GV = 6, GH = 14; SP.gx = GV / CW; SP.gy = GH / CH;
     ctx.strokeStyle = 'rgba(229,57,53,.55)';
     var x = SP.x * CW;
+    ctx.lineWidth = GV;
     ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, B); ctx.stroke();
+    ctx.lineWidth = GH;
     SP.ys.forEach(function (y) { var yy = y * CH; ctx.beginPath(); ctx.moveTo(L, yy); ctx.lineTo(R, yy); ctx.stroke(); });
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#1a73e8';
@@ -1973,6 +1974,7 @@ dialog::backdrop { background: transparent; }
       try {
         var r = await fetch(API + '/read', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, H), body: JSON.stringify({ img: imgs[i] }) });
         if (r.status === 501) { st.textContent = '자동 읽기를 쓰려면 Cloudflare에서 Workers AI 연결(AI)이 필요합니다'; return; }
+        if (!r.ok) { try { var ej = await r.json(); o.why = r.status + ' ' + (ej.error || '') + ' ' + (ej.why || ''); } catch (e2) { o.why = String(r.status); } }
         if (r.ok) {
           var j = await r.json();
           if (NM !== o) return;
@@ -1986,7 +1988,7 @@ dialog::backdrop { background: transparent; }
       st.textContent = '사진에서 단어를 읽는 중… ' + (++done) + '/' + n;
     }
     if (NM !== o) return;
-    st.textContent = got ? '노란 칸은 자동으로 채운 것입니다. 맞는지 확인하고 저장하세요' : '사진에서 단어를 읽지 못했습니다. 직접 적어 주세요';
+    st.textContent = got ? '노란 칸은 자동으로 채운 것입니다. 맞는지 확인하고 저장하세요' : '사진에서 단어를 읽지 못했습니다. 직접 적어 주세요' + (o.why ? ' (' + o.why + ')' : '');
   }
   $('n-list').addEventListener('input', function (e) { if (e.target.classList) e.target.classList.remove('auto'); });
   function openPageEdit(pid, focus) {
