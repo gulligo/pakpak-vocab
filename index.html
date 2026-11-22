@@ -750,7 +750,7 @@ dialog::backdrop { background: transparent; }
     window.scrollTo(0, y || 0);
   }
   document.querySelectorAll('.tabs button').forEach(function (b) {
-    b.addEventListener('click', function () { setTab(b.dataset.tab); if (b.dataset.tab === 'mn') renderMn(); });
+    b.addEventListener('click', function () { setTab(b.dataset.tab); if (b.dataset.tab === 'mn') renderMn(); else render(); });
   });
   $('add').addEventListener('click', function () { if (tab === 'mn') openSheet(); else openEditor(null); });
 
@@ -1926,6 +1926,11 @@ dialog::backdrop { background: transparent; }
   var NM = null;
   function openNames(o) {
     NM = o; NM.armed = false;
+    // 사진을 바로 파일로 만들어 둠 — 오래 두거나 다른 앱에 다녀오면 폰이 그림판(canvas)을 비워 검게 올라가는 문제 방지
+    if (!o.edit) {
+      o.sizes = o.slots.map(function (c) { return [c.width, c.height]; });
+      o.blobs = Promise.all([toBlob(o.page, 1800)].concat(o.slots.map(function (c) { return toBlob(c, 1100); })));
+    }
     $('n-title').textContent = o.edit ? '고치기' : '3. 단어 이름 적기';
     $('n-del').hidden = !o.edit; $('n-del').textContent = '삭제';
     $('n-err').textContent = '';
@@ -1970,14 +1975,16 @@ dialog::backdrop { background: transparent; }
       }
       var pid = newId('p'), now = Date.now(), total = NM.slots.length + 1, done = 0;
       btn.textContent = '올리는 중 0/' + total;
-      await upload(pid, await toBlob(NM.page, 1800), 'image/jpeg');
+      var blobs = await NM.blobs;
+      if (blobs.some(function (b) { return !b; })) throw new Error('blank');
+      await upload(pid, blobs[0], 'image/jpeg');
       btn.textContent = '올리는 중 ' + (++done) + '/' + total;
       var items = [{ id: pid, kind: 'page', vol: v, part: p, pno: pno, n: NM.slots.length, photo: true, pv: 1, created: now }];
       for (var i = 0; i < NM.slots.length; i++) {
         var wid = newId('w');
-        await upload(wid, await toBlob(NM.slots[i], 1100), 'image/jpeg');
+        await upload(wid, blobs[i + 1], 'image/jpeg');
         btn.textContent = '올리는 중 ' + (++done) + '/' + total;
-        items.push({ id: wid, kind: 'word', vol: v, part: p, pno: pno, ord: i + 1, slot: i, pageId: pid, title: names[i] || '', mean: means[i] || '', photo: true, pv: 1, sw: NM.slots[i].width, sh: NM.slots[i].height, created: now + i + 1 });
+        items.push({ id: wid, kind: 'word', vol: v, part: p, pno: pno, ord: i + 1, slot: i, pageId: pid, title: names[i] || '', mean: means[i] || '', photo: true, pv: 1, sw: NM.sizes[i][0], sh: NM.sizes[i][1], created: now + i + 1 });
       }
       var cnt = names.filter(Boolean).length;
       closeNames();
