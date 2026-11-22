@@ -1098,14 +1098,14 @@ dialog::backdrop { background: transparent; }
   function openSheet() {
     var p = sel();
     $('s-vol').value = vol;
-    $('s-part').value = '';
+    var lp = lsGet('jg-lastpart', ''); $('s-part').value = lp ? String(lp) : '';
     $('sheet').hidden = false;
   }
   function closeSheet() { $('sheet').hidden = true; }
   $('s-close').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet') closeSheet(); });
   var target = { vol: 1, part: 1 };
-  function readSheet() { target = { vol: Math.min(2, int($('s-vol').value, 1)), part: int($('s-part').value, 0) }; }
+  function readSheet() { target = { vol: Math.min(2, int($('s-vol').value, 1)), part: int($('s-part').value, 0) }; if (target.part) lsSet('jg-lastpart', target.part); }
   function needPart() { if (target.part) return false; toast('강 번호를 입력해 주세요'); $('s-part').focus(); return true; }
   $('s-page').addEventListener('click', function () { readSheet(); if (needPart()) return; closeSheet(); $('pfile').value = ''; $('pfile').click(); });
   $('s-mp3').addEventListener('click', function () { readSheet(); if (needPart()) return; closeSheet(); $('afile').value = ''; $('afile').click(); });
@@ -2011,6 +2011,7 @@ dialog::backdrop { background: transparent; }
   $('n-save').addEventListener('click', async function () {
     var v = Math.min(2, int($('n-vol').value, 0)), p = int($('n-part').value, 0), pno = int($('n-pno').value, 0);
     if (!v || !p || !pno) { $('n-err').textContent = '권, 강, 쪽 번호를 입력해 주세요.'; return; }
+    if (!NM.edit) lsSet('jg-lastpart', p);
     var names = Array.prototype.map.call(document.querySelectorAll('#n-list .nin'), function (el) { return el.value.trim(); });
     var means = Array.prototype.map.call(document.querySelectorAll('#n-list .nmean'), function (el) { return el.value.trim(); });
     var btn = $('n-save'); btn.disabled = true;
