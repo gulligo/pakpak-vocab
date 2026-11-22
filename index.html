@@ -103,7 +103,7 @@ section[hidden] { display: none; }
   overflow: hidden;
 }
 .empty { text-align: center; color: var(--muted); padding: 60px 20px; line-height: 1.8; white-space: pre-line; }
-@media (orientation: landscape) and (max-height: 600px) {
+@media (orientation: landscape) and (max-height: 820px) {
   header { position: static; }
   .fab { display: none !important; }
 }
@@ -250,15 +250,15 @@ dialog::backdrop { background: transparent; }
 #h-pl .pbtn.sm { width: 34px; height: 34px; }
 #h-pl .pnone { padding: 6px; font-size: 12px; }
 #h-pl[hidden] { display: none; }
-.phd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 18px 2px 8px; }
+.phd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 40px 0 10px; padding: 10px 10px 10px 16px; background: var(--accent); color: #fff; border-radius: 12px; }
 .phd:first-child { margin-top: 4px; }
-.phd b { font-size: 18px; }
-.phd button { border: none; border-radius: 16px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; background: var(--accent); color: var(--surface); font-weight: 600; }
+.phd b { font-size: 20px; }
+.phd button { border: none; border-radius: 16px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; background: #fff; color: var(--accent); font-weight: 600; }
 .phd .pbt { display: flex; gap: 6px; }
-.phd button.rv { background: var(--danger); }
-.phd button.ls { background: var(--accent-bg); color: var(--accent); }
+.phd button.rv { background: var(--danger); color: #fff; }
+.phd button.ls { background: rgba(255,255,255,.85); color: var(--accent); }
 .phd button.ls.on { background: var(--warn); color: #fff; }
-.phd button.done { background: var(--accent-bg); color: var(--accent); font-weight: 400; }
+.phd button.done { background: rgba(255,255,255,.25); color: #fff; font-weight: 400; }
 .tgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .tile {
   position: relative; display: block; width: 100%; padding: 0; border: 1px solid var(--border); border-radius: 8px;
