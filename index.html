@@ -1847,7 +1847,7 @@ dialog::backdrop { background: transparent; }
     ctx.fillRect(0, 0, CW, T); ctx.fillRect(0, B, CW, CH - B);
     ctx.fillRect(0, T, L, B - T); ctx.fillRect(R, T, CW - R, B - T);
     // 빨간 선은 두껍게 — 선이 덮은 부분은 잘라서 버림 (책에 인쇄된 구분선이 단어 사진에 안 나오게)
-    var GV = 6, GH = 14; SP.gx = GV / CW; SP.gy = GH / CH;
+    var GV = 9, GH = 14; SP.gx = GV / CW; SP.gy = GH / CH;
     ctx.strokeStyle = 'rgba(229,57,53,.55)';
     var x = SP.x * CW;
     ctx.lineWidth = GV;
