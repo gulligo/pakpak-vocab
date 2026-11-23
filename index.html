@@ -307,6 +307,9 @@ dialog::backdrop { background: transparent; }
 .tm img { max-height: 54px; max-width: 100%; border-radius: 4px; vertical-align: middle; }
 .tw.hid, .tm.hid { background: var(--bg); color: transparent; border: 1px dashed var(--border); }
 .tw.hid img, .tm.hid img { visibility: hidden; }
+.lset { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 14px; }
+.lset label { display: flex; align-items: center; justify-content: space-between; font-size: 16px; }
+.lset select { height: 42px; min-width: 150px; font-size: 16px; border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; background: #fff; }
 .tset { display: flex; gap: 14px; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
 .tset select { height: 32px; box-shadow: none; border: 1px solid var(--border); font-size: 13px; padding: 0 6px; max-width: none; }
 .tile.reading { outline: 4px solid #fbbc04; outline-offset: 2px; }
@@ -426,6 +429,19 @@ dialog::backdrop { background: transparent; }
     <button class="big b" id="s-mp3" type="button">🎵 이 강 mp3 올리기 / 바꾸기</button>
     <label class="dchk"><input type="checkbox" id="s-daily"> 앱을 열면 오늘의 단어 먼저 보기 <small>(⭐ 어려운 단어 · 1시간에 한 번 · 이 폰만)</small></label>
     <button class="big c" id="s-close" type="button">닫기</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="lsheet" hidden>
+  <div class="sheet">
+    <h3 id="l-title">듣기</h3>
+    <div class="lset">
+      <label>반복<select id="l-rep"><option value="1">1번</option><option value="2">2번</option><option value="3">3번</option><option value="5">5번</option></select></label>
+      <label>순서<select id="l-ord"><option value="ek">영어 → 뜻</option><option value="ke">뜻 → 영어</option><option value="e">영어만</option></select></label>
+      <label>간격<select id="l-gap"><option value="0">0초</option><option value="0.5">0.5초</option><option value="1">1초</option><option value="1.5">1.5초</option><option value="2">2초</option><option value="3">3초</option><option value="5">5초</option></select></label>
+    </div>
+    <button class="big a" id="l-go" type="button">▶ 시작</button>
+    <button class="big c" id="l-close" type="button">닫기</button>
   </div>
 </div>
 
@@ -1085,7 +1101,7 @@ dialog::backdrop { background: transparent; }
   if ('mediaSession' in navigator) {
     try {
       navigator.mediaSession.setActionHandler('play', function () { if (SQ.on || (SQ.el.src && SQ.el.paused && !curTrack)) { SQ.on = true; SQ.el.play(); } else au.play(); });
-      navigator.mediaSession.setActionHandler('pause', function () { if (SQ.on) { SQ.el.pause(); SQ.on = false; if (T) buildTest(); } else au.pause(); });
+      navigator.mediaSession.setActionHandler('pause', function () { if (SQ.on) { seqStop(); } else au.pause(); });
       navigator.mediaSession.setActionHandler('nexttrack', function () { if (SQ.on) { seqNextWord(); return; } var nx = curTrack && nextOf(curTrack); if (nx) playTrack(nx); });
       navigator.mediaSession.setActionHandler('previoustrack', function () {
         if (au.currentTime > 5) { au.currentTime = 0; return; }
@@ -1521,9 +1537,26 @@ dialog::backdrop { background: transparent; }
       b.classList.toggle('on', on); b.textContent = on ? '■ 정지' : '▶ 듣기';
     });
   }
+  var LP = 0;
   function listenPart(p) {
     var key = vol + '-' + p;
     if (SQ.on && SQ.src === key) { seqStop(); return; }
+    LP = p;
+    $('l-title').textContent = vol + '권 ' + p + '강 듣기';
+    $('l-rep').value = String(SQ.reps); $('l-ord').value = SQ.ord; $('l-gap').value = String(SQ.gap);
+    $('lsheet').hidden = false;
+  }
+  $('l-close').addEventListener('click', function () { $('lsheet').hidden = true; });
+  $('lsheet').addEventListener('click', function (e) { if (e.target.id === 'lsheet') $('lsheet').hidden = true; });
+  $('l-go').addEventListener('click', function () {
+    SQ.reps = Number($('l-rep').value) || 1; SQ.ord = $('l-ord').value; SQ.gap = Number($('l-gap').value) || 0;
+    lsSet('jg-sq-rep', SQ.reps); lsSet('jg-sq-ord', SQ.ord); lsSet('jg-sq-gap', SQ.gap);
+    $('t-rep').value = String(SQ.reps); $('t-ord').value = SQ.ord; $('t-gap').value = String(SQ.gap);
+    $('lsheet').hidden = true;
+    listenStart(LP);
+  });
+  function listenStart(p) {
+    var key = vol + '-' + p;
     var ids = bookSort(words().filter(function (x) { return volOf(x) === vol && x.part === p; })).map(function (x) { return x.id; });
     seqStart(ids, key);
   }
@@ -1536,9 +1569,20 @@ dialog::backdrop { background: transparent; }
     SQ.ids.forEach(function (id) { var x = MN.get(id); if (x) prepAudio(x.title); });
     SQ.on = true; SQ.i = 0; SQ.step = 0; SQ.rep = 0; SQ.fails = 0; SQ.retried = false;
     SQ.run = (SQ.run || 0) + 1;
+    keepAlive(true);
     seqPlay(); seqWarm(SQ.run); listenMark();
   }
-  function seqStop() { followTile(null); SQ.on = false; SQ.inGap = false; SQ.src = null; try { SQ.el.pause(); } catch (e) {} if (T) buildTest(); listenMark(); }
+  // 화면이 꺼져도 끊기지 않게: 읽는 동안 소리 없는 오디오를 뒤에서 계속 틀어 둠
+  var KA = null;
+  function keepAlive(on) {
+    try {
+      if (on) { if (!KA) { KA = new Audio(silence(3)); KA.loop = true; } var pr = KA.play(); if (pr && pr.catch) pr.catch(function () {}); }
+      else if (KA) KA.pause();
+    } catch (e) {}
+  }
+  // 다음 소리를 미리 받아 둔 것 (주소 → 파일)
+  var BLOB = {};
+  function seqStop() { keepAlive(false); followTile(null); SQ.on = false; SQ.inGap = false; SQ.src = null; try { SQ.el.pause(); } catch (e) {} if (T) buildTest(); listenMark(); }
   function seqPlay() {
     if (!SQ.on) return;
     if (!SQ.ids.length) { seqStop(); return; }
@@ -1547,7 +1591,8 @@ dialog::backdrop { background: transparent; }
     SQ.inGap = false;
     var parts = seqParts(x);
     if (SQ.step >= parts.length) SQ.step = 0;
-    SQ.el.src = seqUrl(x, parts[SQ.step]);
+    var su = seqUrl(x, parts[SQ.step]);
+    SQ.el.src = BLOB[su] || su;
     var pr = SQ.el.play();
     SQ.tok = (SQ.tok || 0) + 1; var tok = SQ.tok;
     if (pr && pr.catch) pr.catch(function (e) { if (e && e.name === 'AbortError') return; if (tok === SQ.tok) seqFail(); });
@@ -1591,7 +1636,7 @@ dialog::backdrop { background: transparent; }
       var ps = seqParts(x);
       for (var m = 0; m < ps.length; m++) {
         var u = seqUrl(x, ps[m]); if (u.indexOf(API) !== 0) continue;
-        try { await fetch(u); } catch (e) {}
+        if (!BLOB[u]) { try { var rr = await fetch(u); if (rr.ok) { var bb = await rr.blob(); if (bb.size > 200) BLOB[u] = URL.createObjectURL(bb); } } catch (e) {} }
         if (!SQ.on || SQ.run !== run) return;
       }
     }
