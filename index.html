@@ -178,6 +178,9 @@ dialog::backdrop { background: transparent; }
 .vimg { display: block; width: 100%; max-height: 40vh; object-fit: contain; border-radius: 10px; background: var(--bg); margin-bottom: 12px; }
 .vword { font-size: 32px; font-weight: 600; word-break: break-word; line-height: 1.2; }
 .vpron { color: var(--muted); font-size: 16px; display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.micres { min-height: 26px; font-size: 18px; font-weight: 700; text-align: center; margin: 6px 0; }
+.micres.ok { color: #188038; } .micres.no { color: var(--danger); } .micres.wait { color: var(--muted); font-weight: 400; }
+.say.mic.rec { background: var(--danger); color: #fff; }
 .say:active { transform: scale(.9); filter: brightness(.85); }
 .say.on { background: var(--accent); color: var(--surface); }
 .say { transition: transform .08s; display: inline-flex; align-items: center; gap: 6px; border: none; background: var(--accent-bg); color: var(--accent); border-radius: 18px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer; }
@@ -1263,6 +1266,54 @@ dialog::backdrop { background: transparent; }
       }, 2000);
     } catch (e) {}
   }
+  /* ===== 말하기 (폰 음성 인식으로 알아들었는지 확인, 3번 안에 맞으면 통과) ===== */
+  var MIC = { id: null, n: 0, rec: null };
+  function beep(ok) {
+    try {
+      var A = window.AudioContext || window.webkitAudioContext; if (!A) return;
+      var c = beep.c || (beep.c = new A()), t = c.currentTime;
+      (ok ? [[880, 0], [1320, .12]] : [[220, 0], [180, .15]]).forEach(function (f) {
+        var o = c.createOscillator(), g = c.createGain(); o.type = ok ? 'sine' : 'square'; o.frequency.value = f[0];
+        g.gain.setValueAtTime(.0001, t + f[1]); g.gain.exponentialRampToValueAtTime(ok ? .3 : .12, t + f[1] + .02); g.gain.exponentialRampToValueAtTime(.0001, t + f[1] + .25);
+        o.connect(g); g.connect(c.destination); o.start(t + f[1]); o.stop(t + f[1] + .3);
+      });
+    } catch (e) {}
+  }
+  function nrm(t) { return String(t || '').toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function micCheck(x) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast('이 폰에서는 말하기 확인을 쓸 수 없습니다'); return; }
+    if (MIC.rec) { try { MIC.rec.abort(); } catch (e) {} MIC.rec = null; }
+    if (MIC.id !== x.id) { MIC.id = x.id; MIC.n = 0; }
+    var res = $('v-micres'), btn = $('v-mic'), target = nrm(x.title);
+    try { if (SQ.on) seqStop(); au.pause(); } catch (e) {}
+    var r = new SR(); MIC.rec = r;
+    r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 5;
+    var done = false;
+    function show(cls, t) { if (res) { res.className = 'micres ' + cls; res.textContent = t; } }
+    btn && btn.classList.add('rec'); show('wait', '듣고 있어요… 단어를 읽어 보세요');
+    r.onresult = function (ev) {
+      done = true;
+      var alts = [], rs = ev.results[0];
+      for (var i = 0; i < rs.length; i++) alts.push(nrm(rs[i].transcript));
+      var hit = alts.some(function (a) { return a === target || (' ' + a + ' ').indexOf(' ' + target + ' ') >= 0; });
+      MIC.n++;
+      if (hit) { beep(true); show('ok', '⭕ 잘했어요!'); MIC.n = 0; return; }
+      beep(false);
+      var heard = alts[0] || '?';
+      if (MIC.n >= 3) { show('no', '❌ "' + heard + '"로 들렸어요. 정답 발음을 들어 보세요'); MIC.n = 0; setTimeout(function () { say(x.title); }, 900); }
+      else show('no', '❌ "' + heard + '"로 들렸어요 (' + MIC.n + '/3) 다시 해 보세요');
+    };
+    r.onerror = function (ev) {
+      done = true;
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') show('no', '마이크 사용을 허용해 주세요');
+      else if (ev.error === 'no-speech') show('wait', '소리가 안 들렸어요. 🎤를 다시 누르고 읽어 보세요');
+      else if (ev.error === 'network') show('no', '인터넷 연결을 확인해 주세요');
+      else if (ev.error !== 'aborted') show('no', '다시 해 보세요');
+    };
+    r.onend = function () { btn && btn.classList.remove('rec'); if (MIC.rec === r) MIC.rec = null; if (!done) show('wait', '소리가 안 들렸어요. 🎤를 다시 누르고 읽어 보세요'); };
+    try { r.start(); } catch (e) { show('no', '다시 해 보세요'); }
+  }
   function renderViewer(dir) {
     if (!V) return;
     V.ids = V.ids.filter(function (id) { return MN.get(id); });
@@ -1291,10 +1342,14 @@ dialog::backdrop { background: transparent; }
           '<div class="vfw">' + esc(x.title) + '</div>' +
           (x.pron ? '<div class="vpron" style="justify-content:center">' + esc(x.pron) + '</div>' : '') +
           '<button class="say" id="v-say" type="button" style="position:absolute;top:12px;right:12px"><img class="sicon" src="sing.png" alt="">다시 듣기</button>' +
+          '<button class="say mic" id="v-mic" type="button" style="position:absolute;top:12px;left:12px">🎤 말하기</button>' +
+          '<div class="micres" id="v-micres"></div>' +
           '<div class="vtap">뜻을 떠올려 본 뒤 탭하세요</div></div>' +
           '</div>';
         warm(x.title);
         $('v-say').onclick = function (e) { e.stopPropagation(); say(x.title); };
+        $('v-mic').onclick = function (e) { e.stopPropagation(); micCheck(x); };
+        $('v-micres').onclick = function (e) { e.stopPropagation(); };
         $('v-front').onclick = function () { V.flip = true; renderViewer(); };
         if (V.spoken !== x.id + ':' + V.i) { V.spoken = x.id + ':' + V.i; say(x.title); }
         stage.scrollTop = 0;
@@ -1306,7 +1361,9 @@ dialog::backdrop { background: transparent; }
         (String(x.memo || '').trim() ? '<div class="vmemo" id="v-memo"><b>📝 메모</b>\n' + esc(x.memo) + '</div>' : '') +
         '<div class="vpron" style="justify-content:space-between"><span class="vword" style="font-size:26px;color:var(--text)">' + esc(x.title || '') + '</span>' +
         '<span style="display:flex;gap:6px"><button class="star' + (HARD[x.id] ? ' on' : '') + '" id="v-star" type="button">' + (HARD[x.id] ? '★ 어려움' : '☆ 어려움') + '</button>' +
+        '<button class="say mic" id="v-mic" type="button">🎤</button>' +
         '<button class="say" id="v-say" type="button"><img class="sicon" src="sing.png" alt="">발음</button></span></div>' +
+        '<div class="micres" id="v-micres"></div>' +
         (x.pron ? '<div class="vpron">' + esc(x.pron) + '</div>' : '') +
         (x.mean ? '<div class="vmean">' + esc(x.mean) + '</div>' : '') +
         (x.mn ? '<div class="vmn">' + mnHtml(x.mn) + '</div>' : '') +
@@ -1320,6 +1377,7 @@ dialog::backdrop { background: transparent; }
         if (x.title) say(x.title);
         else { toast('단어 이름이 없어서 읽을 수 없습니다. 이름을 적어 주세요'); openWordEdit(x.id); }
       };
+      if ($('v-mic')) $('v-mic').onclick = function () { if (x.title) micCheck(x); };
       if ($('v-memo')) $('v-memo').onclick = function () { openMemo(x.id); };
       if ($('v-star')) $('v-star').onclick = function () {
         var on = toggleHard(x.id), b = $('v-star');
