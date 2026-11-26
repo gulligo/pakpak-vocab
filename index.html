@@ -270,6 +270,7 @@ dialog::backdrop { background: transparent; }
 }
 .tile img { display: block; width: 100%; height: auto; pointer-events: none; -webkit-touch-callout: none; }
 .tile .nm { display: block; padding: 24px 6px; font-size: 15px; font-weight: 600; text-align: center; }
+.tile.wide { grid-column: 1 / -1; }
 .tile.memo { border: 2px solid var(--warn); }
 .tile .mk { position: absolute; right: 4px; top: 4px; background: var(--warn); color: #fff; border-radius: 10px; font-size: 12px; padding: 2px 6px; line-height: 1.3; }
 .tile.press { opacity: .6; }
@@ -596,7 +597,7 @@ dialog::backdrop { background: transparent; }
 <dialog id="sdlg">
   <div class="bar">
     <button class="icon" id="sp-back" type="button" aria-label="뒤로">&#8592;</button>
-    <span class="tt">2. 칸 나누기</span>
+    <span class="tt">1. 칸 나누기</span>
     <span class="sp"></span>
     <button class="btn pri" id="sp-ok" type="button">다음</button>
   </div>
@@ -623,7 +624,7 @@ dialog::backdrop { background: transparent; }
 <dialog id="ndlg">
   <div class="bar">
     <button class="icon" id="n-back" type="button" aria-label="뒤로">&#8592;</button>
-    <span class="tt" id="n-title">3. 단어 이름 적기</span>
+    <span class="tt" id="n-title">2. 단어 이름 적기</span>
     <span class="sp"></span>
     <button class="icon danger" id="n-del" type="button">삭제</button>
     <button class="btn pri" id="n-save" type="button">저장</button>
@@ -878,7 +879,8 @@ dialog::backdrop { background: transparent; }
     var memo = String(x.memo || '').trim(), seen = inSearch && SEEN[x.id];
     var ar = x.sw && x.sh ? ' style="aspect-ratio:' + x.sw + ' / ' + x.sh + '"' : '';
     var rd = !inSearch && SQ && SQ.on && SQ.src !== 'test' && SQ.ids[SQ.i] === x.id;
-    return '<button class="tile' + (memo ? ' memo' : '') + (seen ? ' seen' : '') + (rd ? ' reading' : '') + '" data-id="' + esc(x.id) + '" type="button">' +
+    var wide = x.sw && x.sh && x.sw / x.sh > 2.5;
+    return '<button class="tile' + (wide ? ' wide' : '') + (memo ? ' memo' : '') + (seen ? ' seen' : '') + (rd ? ' reading' : '') + '" data-id="' + esc(x.id) + '" type="button">' +
       (x.photo ? '<img loading="lazy" draggable="false" alt="' + esc(x.title || '') + '"' + ar + ' src="' + esc(photoUrl(x)) + '">' : '<span class="nm">' + esc(x.title || '') + '</span>') +
       (PKSET[tkey(x.title)] ? '<span class="pk">팍</span>' : '') + (memo ? '<span class="mk">📝</span>' : '') + (seen ? '<span class="sk">찾아봄 ' + SEEN[x.id] + '번</span>' : '') + '</button>';
   }
@@ -1801,15 +1803,12 @@ dialog::backdrop { background: transparent; }
     if (!f) return;
     var url = URL.createObjectURL(f), img = new Image();
     img.onload = function () {
-      var sc = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight));
+      var sc = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
       var c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
-      var W = c.width, Hh = c.height;
-      C = { src: c, pts: [[W * .08, Hh * .08], [W * .92, Hh * .08], [W * .92, Hh * .92], [W * .08, Hh * .92]], drag: -1 };
-      $('cdlg').showModal();
-      setupCanvas();
+      openSplit(c);
     };
     img.onerror = function () { URL.revokeObjectURL(url); toast('사진을 열지 못했습니다'); };
     img.src = url;
@@ -2197,7 +2196,7 @@ dialog::backdrop { background: transparent; }
       o.sizes = o.slots.map(function (c) { return [c.width, c.height]; });
       o.blobs = Promise.all([toBlob(o.page, 1800)].concat(o.slots.map(function (c) { return toBlob(c, 1100); })));
     }
-    $('n-title').textContent = o.edit ? '고치기' : '3. 단어 이름 적기';
+    $('n-title').textContent = o.edit ? '고치기' : '2. 단어 이름 적기';
     $('n-del').hidden = !o.edit; $('n-del').textContent = '삭제';
     $('n-err').textContent = '';
     $('n-save').disabled = false; $('n-save').textContent = '저장';
